@@ -53,7 +53,7 @@ Set these env vars:
 - `AI_MODEL` (optional neutral alias for non-OpenAI default providers)
 - `AI_PROVIDER` (optional, defaults to `openai`)
 - `AI_BASE_URL` (optional, for OpenAI-compatible providers)
-- `AI_REQUEST_TIMEOUT_MS` (optional, defaults to 55000; keep at or below your host function limit)
+- `AI_REQUEST_TIMEOUT_MS` (optional, defaults to 295000; keep at or below your host function limit)
 
 ## Local Setup (Brief)
 
@@ -72,7 +72,7 @@ ENCRYPTION_KEY=base64_32_byte_key
 OPENAI_API_KEY=your_openai_key
 OPENAI_MODEL=gpt-4o-mini
 AI_PROVIDER=openai
-AI_REQUEST_TIMEOUT_MS=55000
+AI_REQUEST_TIMEOUT_MS=295000
 # AI_BASE_URL=https://openrouter.ai/api/v1
 ```
 

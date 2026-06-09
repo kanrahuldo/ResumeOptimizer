@@ -6,7 +6,7 @@ import {
   normalizeAiProvider,
 } from "@/lib/ai-providers";
 
-const DEFAULT_TIMEOUT_MS = 55_000;
+const DEFAULT_TIMEOUT_MS = 295_000;
 
 function getTimeoutMs() {
   const parsed = Number(process.env.AI_REQUEST_TIMEOUT_MS);
