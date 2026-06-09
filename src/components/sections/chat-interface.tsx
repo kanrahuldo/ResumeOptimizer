@@ -7,11 +7,17 @@ import { ChevronDown, Copy, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  fetchOpenAiConfigs,
   fetchPrompts,
   fetchTemplates,
+  OpenAiConfigRecord,
   PromptRecord,
   TemplateRecord,
 } from "@/lib/api";
+import {
+  getProviderLabel,
+  getProviderModels,
+} from "@/lib/ai-providers";
 import { useToast } from "@/components/ui/toast";
 
 type ChatMessage = {
@@ -31,6 +37,13 @@ type GenerateResponse = {
   };
   error?: string;
   details?: string[];
+};
+
+const defaultWelcome: ChatMessage = {
+  id: "welcome",
+  role: "assistant",
+  content:
+    "Paste a job description to generate a tailored LaTeX resume. I will return an Overleaf link when it is ready.",
 };
 
 function ChatBubble({
@@ -115,20 +128,17 @@ export function ChatInterface() {
   const [jobDescription, setJobDescription] = useState("");
   const [templates, setTemplates] = useState<TemplateRecord[]>([]);
   const [prompts, setPrompts] = useState<PromptRecord[]>([]);
+  const [aiConfigs, setAiConfigs] = useState<OpenAiConfigRecord[]>([]);
   const [templateId, setTemplateId] = useState<number | undefined>(undefined);
   const [promptId, setPromptId] = useState<number | undefined>(undefined);
+  const [aiConfigId, setAiConfigId] = useState<number | undefined>(undefined);
+  const [model, setModel] = useState("");
+  const [isCustomModel, setIsCustomModel] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isBusy, setIsBusy] = useState(false);
   const [composerHeight, setComposerHeight] = useState(400);
   const [isHydrated, setIsHydrated] = useState(false);
   const [isNearBottom, setIsNearBottom] = useState(true);
-
-  const defaultWelcome: ChatMessage = {
-    id: "welcome",
-    role: "assistant",
-    content:
-      "Paste a job description to generate a tailored LaTeX resume. I will return an Overleaf link when it is ready.",
-  };
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -140,6 +150,9 @@ export function ChatInterface() {
           messages?: ChatMessage[];
           templateId?: number;
           promptId?: number;
+          aiConfigId?: number;
+          model?: string;
+          isCustomModel?: boolean;
           composerHeight?: number;
         };
         if (parsed.jobDescription) setJobDescription(parsed.jobDescription);
@@ -150,6 +163,9 @@ export function ChatInterface() {
         }
         if (parsed.templateId) setTemplateId(parsed.templateId);
         if (parsed.promptId) setPromptId(parsed.promptId);
+        if (parsed.aiConfigId) setAiConfigId(parsed.aiConfigId);
+        if (parsed.model) setModel(parsed.model);
+        if (parsed.isCustomModel) setIsCustomModel(true);
         if (parsed.composerHeight) setComposerHeight(parsed.composerHeight);
       } catch {
         setMessages([defaultWelcome]);
@@ -173,10 +189,13 @@ export function ChatInterface() {
       messages,
       templateId,
       promptId,
+      aiConfigId,
+      model,
+      isCustomModel,
       composerHeight,
     };
     window.sessionStorage.setItem(storageKey, JSON.stringify(payload));
-  }, [isHydrated, jobDescription, messages, templateId, promptId, composerHeight]);
+  }, [isHydrated, jobDescription, messages, templateId, promptId, aiConfigId, model, isCustomModel, composerHeight]);
 
   const scrollToBottom = (behavior: ScrollBehavior = "smooth") => {
     messagesEndRef.current?.scrollIntoView({ behavior, block: "end" });
@@ -207,26 +226,37 @@ export function ChatInterface() {
   useEffect(() => {
     const load = async () => {
       try {
-        const [templatesResponse, promptsResponse] = await Promise.all([
+        const [templatesResponse, promptsResponse, aiConfigsResponse] = await Promise.all([
           fetchTemplates(),
           fetchPrompts(),
+          fetchOpenAiConfigs(),
         ]);
         setTemplates(templatesResponse.data);
         setPrompts(promptsResponse.data);
+        setAiConfigs(aiConfigsResponse.data);
         const defaultTemplate = templatesResponse.data.find(
           (template) => template.isDefault
         );
         const defaultPrompt = promptsResponse.data.find(
           (prompt) => prompt.isDefault
         );
+        const defaultAiConfig = aiConfigsResponse.data.find(
+          (config) => config.isDefault
+        ) || aiConfigsResponse.data[0];
         setTemplateId((prev) => prev ?? defaultTemplate?.id);
         setPromptId((prev) => prev ?? defaultPrompt?.id);
+        setAiConfigId((prev) => prev ?? defaultAiConfig?.id);
+        setModel((prev) => {
+          if (prev) return prev;
+          const models = getProviderModels(defaultAiConfig?.provider);
+          return models[0]?.id || defaultAiConfig?.model || "";
+        });
       } catch (error) {
         push({
           title:
             error instanceof Error
               ? error.message
-              : "Failed to load templates or prompts.",
+              : "Failed to load templates, prompts, or AI profiles.",
           variant: "error",
         });
       }
@@ -234,16 +264,65 @@ export function ChatInterface() {
     load();
   }, [push]);
 
+  const selectedAiConfig = useMemo(
+    () => aiConfigs.find((config) => config.id === aiConfigId),
+    [aiConfigs, aiConfigId]
+  );
+  const selectedProviderModels = useMemo(
+    () => selectedAiConfig ? getProviderModels(selectedAiConfig.provider) : [],
+    [selectedAiConfig]
+  );
+  const selectedModelValue = isCustomModel
+    ? "__custom"
+    : selectedProviderModels.some((item) => item.id === model)
+    ? model
+    : "";
+
+  useEffect(() => {
+    if (!selectedAiConfig) {
+      setModel("");
+      setIsCustomModel(false);
+      return;
+    }
+    const models = getProviderModels(selectedAiConfig.provider);
+    setModel((prev) => {
+      if (prev && models.some((item) => item.id === prev)) {
+        setIsCustomModel(false);
+        return prev;
+      }
+      if (prev) {
+        setIsCustomModel(true);
+        return prev;
+      }
+      const fallbackModel = models[0]?.id || selectedAiConfig.model || "";
+      setIsCustomModel(false);
+      return fallbackModel;
+    });
+  }, [selectedAiConfig]);
+
   const helperText = useMemo(() => {
     if (!templates.length || !prompts.length) {
       return "Add at least one template and prompt in Settings before generating.";
     }
+    if (!aiConfigs.length) {
+      return "Add at least one AI profile in Settings before generating.";
+    }
+    if (!model.trim()) {
+      return "Choose an AI model before generating.";
+    }
     return "Press Enter to send. Shift + Enter for a new line.";
-  }, [templates.length, prompts.length]);
+  }, [templates.length, prompts.length, aiConfigs.length, model]);
 
   const handleGenerate = async (overrideText?: string) => {
     const nextText = String(overrideText ?? jobDescription ?? "");
     if (!nextText.trim() || isBusy) return;
+    if (!selectedAiConfig || !model.trim()) {
+      push({
+        title: "Choose an AI profile and model before generating.",
+        variant: "error",
+      });
+      return;
+    }
 
     const userMessage: ChatMessage = {
       id: `user-${Date.now()}`,
@@ -272,6 +351,8 @@ export function ChatInterface() {
           jobDescription: userMessage.content,
           templateId,
           promptId,
+          aiConfigId,
+          model: model.trim(),
         }),
       });
       const json = (await response.json()) as GenerateResponse;
@@ -433,7 +514,7 @@ export function ChatInterface() {
             <div className="flex">
               <Button
                 onClick={() => handleGenerate()}
-                disabled={isBusy}
+                disabled={isBusy || !jobDescription.trim() || !selectedAiConfig || !model.trim()}
                 className="w-full"
               >
                 Generate
@@ -486,6 +567,65 @@ export function ChatInterface() {
                   <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                 </div>
               </label>
+              <label className="space-y-1 text-xs text-slate-300">
+                <div className="mb-1">AI profile</div>
+                <div className="relative">
+                  <select
+                    className="h-10 w-full truncate min-w-[170px] appearance-none rounded-xl border border-[#2a2f55] bg-[#111633] px-3 pr-9 text-sm text-slate-100"
+                    value={aiConfigId ?? ""}
+                    onChange={(event) => {
+                      const nextId = event.target.value
+                        ? Number(event.target.value)
+                        : undefined;
+                      const nextConfig = aiConfigs.find((config) => config.id === nextId);
+                      const nextModels = getProviderModels(nextConfig?.provider);
+                      setAiConfigId(nextId);
+                      setIsCustomModel(false);
+                      setModel(nextModels[0]?.id || nextConfig?.model || "");
+                    }}
+                  >
+                    <option value="">Select AI profile</option>
+                    {aiConfigs.map((config) => (
+                      <option key={config.id} value={config.id}>
+                        {config.name} - {getProviderLabel(config.provider)}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                </div>
+              </label>
+              <label className="space-y-1 text-xs text-slate-300">
+                <div className="mb-1">Model</div>
+                <div className="relative">
+                  <select
+                    className="h-10 w-full truncate min-w-[170px] appearance-none rounded-xl border border-[#2a2f55] bg-[#111633] px-3 pr-9 text-sm text-slate-100"
+                    value={selectedModelValue}
+                    onChange={(event) => {
+                      const nextModel = event.target.value;
+                      setIsCustomModel(nextModel === "__custom");
+                      setModel(nextModel === "__custom" ? "" : nextModel);
+                    }}
+                    disabled={!selectedAiConfig}
+                  >
+                    <option value="">Select model</option>
+                    {selectedProviderModels.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.label}{"thinking" in item && item.thinking ? " (thinking)" : ""}
+                      </option>
+                    ))}
+                    <option value="__custom">Custom model ID</option>
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                </div>
+              </label>
+              {selectedModelValue === "__custom" && (
+                <input
+                  className="h-10 w-full min-w-[170px] rounded-xl border border-[#2a2f55] bg-[#111633] px-3 text-sm text-slate-100 placeholder:text-slate-500"
+                  placeholder="Custom model ID"
+                  value={model}
+                  onChange={(event) => setModel(event.target.value)}
+                />
+              )}
             </div>
           </div>
         </div>

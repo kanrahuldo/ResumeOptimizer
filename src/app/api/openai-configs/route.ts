@@ -3,6 +3,7 @@ import { and, desc, eq, sql } from "drizzle-orm";
 
 import { db } from "@/db";
 import { openaiConfigs } from "@/db/schema";
+import { getProviderModels } from "@/lib/ai-providers";
 import { getUserId } from "@/lib/auth";
 import { decryptSecret, encryptSecret } from "@/lib/crypto";
 
@@ -34,13 +35,13 @@ export async function POST(request: Request) {
   const body = await request.json();
   const name = String(body?.name || "").trim();
   const apiKey = String(body?.apiKey || "").trim();
-  const model = String(body?.model || "").trim();
   const provider = String(body?.provider || "openai").trim();
+  const model = String(body?.model || getProviderModels(provider)[0]?.id || "gpt-4o-mini").trim();
   const baseUrl = String(body?.baseUrl || "").trim();
 
-  if (!name || !apiKey || !model) {
+  if (!name || !apiKey) {
     return NextResponse.json(
-      { error: "Name, API key, and model are required." },
+      { error: "Name and API key are required." },
       { status: 400 }
     );
   }

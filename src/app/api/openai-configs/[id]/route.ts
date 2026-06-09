@@ -3,6 +3,7 @@ import { and, eq } from "drizzle-orm";
 
 import { db } from "@/db";
 import { openaiConfigs } from "@/db/schema";
+import { getProviderModels } from "@/lib/ai-providers";
 import { getUserId } from "@/lib/auth";
 import { encryptSecret } from "@/lib/crypto";
 
@@ -25,13 +26,12 @@ export async function PATCH(request: Request, { params }: Params) {
   const body = await request.json();
   const name = String(body?.name || "").trim();
   const apiKey = String(body?.apiKey || "").trim();
-  const model = String(body?.model || "").trim();
   const provider = String(body?.provider || "openai").trim();
   const baseUrl = String(body?.baseUrl || "").trim();
 
-  if (!name || !model) {
+  if (!name) {
     return NextResponse.json(
-      { error: "Name and model are required." },
+      { error: "Name is required." },
       { status: 400 }
     );
   }
@@ -45,6 +45,10 @@ export async function PATCH(request: Request, { params }: Params) {
   if (!existing) {
     return NextResponse.json({ error: "Config not found." }, { status: 404 });
   }
+
+  const model = String(
+    body?.model || getProviderModels(provider)[0]?.id || existing.model || "gpt-4o-mini"
+  ).trim();
 
   const [updated] = await db
     .update(openaiConfigs)

@@ -34,14 +34,12 @@ export function SettingsOpenAI() {
   const [name, setName] = useState("");
   const [provider, setProvider] = useState("openai");
   const [apiKey, setApiKey] = useState("");
-  const [model, setModel] = useState("");
   const [baseUrl, setBaseUrl] = useState("");
   const [showKey, setShowKey] = useState(false);
   const [isDefault, setIsDefault] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [originalName, setOriginalName] = useState("");
   const [originalProvider, setOriginalProvider] = useState("openai");
-  const [originalModel, setOriginalModel] = useState("");
   const [originalBaseUrl, setOriginalBaseUrl] = useState("");
   const [originalDefault, setOriginalDefault] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
@@ -49,10 +47,7 @@ export function SettingsOpenAI() {
   const [error, setError] = useState<string | null>(null);
   const [hasKey, setHasKey] = useState(false);
   const { push } = useToast();
-  const providerModels = getProviderModels(provider);
-  const selectedModelValue = providerModels.some((item) => item.id === model)
-    ? model
-    : "__custom";
+  const testModel = getProviderModels(provider)[0]?.id || "gpt-4o-mini";
 
   const loadConfigs = async () => {
     try {
@@ -72,8 +67,8 @@ export function SettingsOpenAI() {
 
   const handleSave = async () => {
     setError(null);
-    if (!name.trim() || !model.trim()) {
-      setError("Name and model are required.");
+    if (!name.trim()) {
+      setError("Name is required.");
       return;
     }
     if (!apiKey.trim() && !hasKey) {
@@ -87,7 +82,7 @@ export function SettingsOpenAI() {
           name: name.trim(),
           provider,
           apiKey: apiKey.trim(),
-          model: model.trim(),
+          model: testModel,
           baseUrl: baseUrl.trim(),
         });
         push({ title: "AI profile updated.", variant: "success" });
@@ -96,7 +91,7 @@ export function SettingsOpenAI() {
           name: name.trim(),
           provider,
           apiKey: apiKey.trim(),
-          model: model.trim(),
+          model: testModel,
           baseUrl: baseUrl.trim(),
           isDefault,
         });
@@ -105,7 +100,6 @@ export function SettingsOpenAI() {
       setName("");
       setProvider("openai");
       setApiKey("");
-      setModel("");
       setBaseUrl("");
       setIsDefault(false);
       setEditingId(null);
@@ -126,12 +120,10 @@ export function SettingsOpenAI() {
     setProvider(config.provider || "openai");
     setApiKey(config.apiKey || "");
     setHasKey(Boolean(config.apiKey));
-    setModel(config.model);
     setBaseUrl(config.baseUrl || "");
     setIsDefault(config.isDefault);
     setOriginalName(config.name);
     setOriginalProvider(config.provider || "openai");
-    setOriginalModel(config.model);
     setOriginalBaseUrl(config.baseUrl || "");
     setOriginalDefault(config.isDefault);
   };
@@ -142,13 +134,11 @@ export function SettingsOpenAI() {
     setProvider("openai");
     setApiKey("");
     setHasKey(false);
-    setModel("");
     setBaseUrl("");
     setIsDefault(false);
     setShowKey(false);
     setOriginalName("");
     setOriginalProvider("openai");
-    setOriginalModel("");
     setOriginalBaseUrl("");
     setOriginalDefault(false);
     setError(null);
@@ -196,13 +186,13 @@ export function SettingsOpenAI() {
     }
   };
 
-  const handleTest = async (_config?: OpenAiConfigRecord) => {
+  const handleTest = async () => {
     setError(null);
     const nextApiKey = apiKey.trim();
-    const nextModel = model.trim();
+    const nextModel = testModel;
     const nextBaseUrl = baseUrl.trim();
-    if ((!nextApiKey && !hasKey) || !nextModel) {
-      const message = "Fill model and API key before testing.";
+    if (!nextApiKey && !hasKey) {
+      const message = "Fill API key before testing.";
       setError(message);
       push({ title: message, variant: "error" });
       return;
@@ -242,7 +232,7 @@ export function SettingsOpenAI() {
         <CardHeader>
           <CardTitle>AI profiles</CardTitle>
           <CardDescription>
-            Store provider keys and models with a default profile.
+            Store provider API keys with a default profile.
           </CardDescription>
         </CardHeader>
         <CardContent className="max-h-[520px] space-y-4 overflow-y-auto pr-2">
@@ -256,7 +246,7 @@ export function SettingsOpenAI() {
                   <span className="text-sm font-semibold">{config.name}</span>
                 </div>
                 <span className="text-xs text-slate-400">
-                  {AI_PROVIDERS.find((item) => item.id === config.provider)?.label || config.provider} - {config.model}
+                  {AI_PROVIDERS.find((item) => item.id === config.provider)?.label || config.provider}
                 </span>
               </div>
               <div className="flex items-center gap-1">
@@ -309,7 +299,7 @@ export function SettingsOpenAI() {
                 {editingId ? "Edit AI profile" : "Add AI profile"}
               </CardTitle>
               <CardDescription>
-                Save API key, provider, and default model for this profile.
+                Save API key and provider for this profile.
               </CardDescription>
             </div>
             <label className="flex items-center gap-3 text-sm text-slate-300">
@@ -339,10 +329,8 @@ export function SettingsOpenAI() {
             value={provider}
             onChange={(event) => {
               const nextProvider = event.target.value;
-              const nextModels = getProviderModels(nextProvider);
               setProvider(nextProvider);
               setBaseUrl(getProviderBaseUrl(nextProvider, "") || "");
-              setModel(nextModels[0]?.id || "");
             }}
           >
             {AI_PROVIDERS.map((item) => (
@@ -372,28 +360,6 @@ export function SettingsOpenAI() {
               )}
             </button>
           </div>
-          <select
-            className="h-11 w-full rounded-xl border border-[#2a2f55] bg-[#0f1228] px-4 text-sm text-slate-100 outline-none transition focus:border-indigo-400"
-            value={selectedModelValue}
-            onChange={(event) => {
-              const nextModel = event.target.value;
-              setModel(nextModel === "__custom" ? "" : nextModel);
-            }}
-          >
-            {providerModels.map((item) => (
-              <option key={item.id} value={item.id}>
-                {item.label}{"thinking" in item && item.thinking ? " (thinking)" : ""}
-              </option>
-            ))}
-            <option value="__custom">Custom model ID</option>
-          </select>
-          {selectedModelValue === "__custom" && (
-            <Input
-              placeholder="Custom model ID"
-              value={model}
-              onChange={(event) => setModel(event.target.value)}
-            />
-          )}
           <Input
             placeholder="Base URL (optional for listed providers)"
             value={baseUrl}
@@ -408,7 +374,6 @@ export function SettingsOpenAI() {
               }}
               disabled={
                 isBusy ||
-                !model.trim() ||
                 (!apiKey.trim() && !hasKey)
               }
             >
@@ -419,12 +384,10 @@ export function SettingsOpenAI() {
               disabled={
                 isBusy ||
                 !name.trim() ||
-                !model.trim() ||
                 (!apiKey.trim() && !hasKey) ||
                 (editingId
                   ? name.trim() === originalName.trim() &&
                     provider === originalProvider &&
-                    model.trim() === originalModel.trim() &&
                     baseUrl.trim() === originalBaseUrl.trim() &&
                     !apiKey.trim() &&
                     isDefault === originalDefault

@@ -24,6 +24,7 @@ export async function POST(request: Request) {
   const templateId = body?.templateId ? Number(body.templateId) : null;
   const promptId = body?.promptId ? Number(body.promptId) : null;
   const aiConfigId = body?.aiConfigId ? Number(body.aiConfigId) : null;
+  const requestedModel = String(body?.model || "").trim();
 
   if (!jobDescription) {
     return NextResponse.json(
@@ -137,7 +138,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const model = defaultOpenAi?.model || process.env.AI_MODEL || process.env.OPENAI_MODEL || "gpt-4o-mini";
+  const model = requestedModel || defaultOpenAi?.model || process.env.AI_MODEL || process.env.OPENAI_MODEL || "gpt-4o-mini";
   const provider = defaultOpenAi?.provider || process.env.AI_PROVIDER || "openai";
   const baseUrl = defaultOpenAi?.baseUrl || process.env.AI_BASE_URL;
 

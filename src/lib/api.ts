@@ -190,7 +190,7 @@ export async function createOpenAiConfig(payload: {
   name: string;
   provider: string;
   apiKey: string;
-  model: string;
+  model?: string;
   baseUrl?: string;
   isDefault?: boolean;
 }) {
@@ -205,7 +205,7 @@ export async function createOpenAiConfig(payload: {
 
 export async function updateOpenAiConfig(
   id: number,
-  payload: { name: string; provider: string; apiKey: string; model: string; baseUrl?: string }
+  payload: { name: string; provider: string; apiKey: string; model?: string; baseUrl?: string }
 ) {
   return handleJson<{ data: OpenAiConfigRecord }>(
     await fetch(`/api/openai-configs/${id}`, {
