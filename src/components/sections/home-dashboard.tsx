@@ -32,6 +32,7 @@ export function HomeDashboard() {
   const handleGenerate = async (payload: {
     templateId?: number;
     promptId?: number;
+    aiConfigId?: number;
   }) => {
     setIsBusy(true);
     setStatusLabel("Generating");
@@ -48,6 +49,7 @@ export function HomeDashboard() {
           jobDescription,
           templateId: payload.templateId,
           promptId: payload.promptId,
+          aiConfigId: payload.aiConfigId,
         }),
       });
       const json = (await response.json()) as GenerateResponse;

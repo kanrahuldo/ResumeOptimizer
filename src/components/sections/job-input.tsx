@@ -14,14 +14,17 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   fetchPrompts,
   fetchTemplates,
+  fetchOpenAiConfigs,
+  OpenAiConfigRecord,
   PromptRecord,
   TemplateRecord,
 } from "@/lib/api";
+import { getProviderLabel } from "@/lib/ai-providers";
 
 type JobInputProps = {
   jobDescription: string;
   onJobDescriptionChange: (value: string) => void;
-  onGenerate: (payload: { templateId?: number; promptId?: number }) => void;
+  onGenerate: (payload: { templateId?: number; promptId?: number; aiConfigId?: number }) => void;
   isBusy: boolean;
 };
 
@@ -33,25 +36,33 @@ export function JobInput({
 }: JobInputProps) {
   const [templates, setTemplates] = useState<TemplateRecord[]>([]);
   const [prompts, setPrompts] = useState<PromptRecord[]>([]);
+  const [aiConfigs, setAiConfigs] = useState<OpenAiConfigRecord[]>([]);
   const [templateId, setTemplateId] = useState<number | undefined>(undefined);
   const [promptId, setPromptId] = useState<number | undefined>(undefined);
+  const [aiConfigId, setAiConfigId] = useState<number | undefined>(undefined);
 
   useEffect(() => {
     const load = async () => {
-      const [templatesResponse, promptsResponse] = await Promise.all([
+      const [templatesResponse, promptsResponse, aiConfigsResponse] = await Promise.all([
         fetchTemplates(),
         fetchPrompts(),
+        fetchOpenAiConfigs(),
       ]);
       setTemplates(templatesResponse.data);
       setPrompts(promptsResponse.data);
+      setAiConfigs(aiConfigsResponse.data);
       const defaultTemplate = templatesResponse.data.find(
         (template) => template.isDefault
       );
       const defaultPrompt = promptsResponse.data.find(
         (prompt) => prompt.isDefault
       );
+      const defaultAiConfig = aiConfigsResponse.data.find(
+        (config) => config.isDefault
+      );
       setTemplateId(defaultTemplate?.id);
       setPromptId(defaultPrompt?.id);
+      setAiConfigId(defaultAiConfig?.id);
     };
     load();
   }, []);
@@ -76,7 +87,7 @@ export function JobInput({
             onChange={(event) => onJobDescriptionChange(event.target.value)}
           />
         </div>
-        <div className="grid gap-3 md:grid-cols-2">
+        <div className="grid gap-3 md:grid-cols-3">
           <label className="flex flex-col gap-2 text-sm font-medium text-neutral-700">
             Template
             <select
@@ -111,11 +122,28 @@ export function JobInput({
               ))}
             </select>
           </label>
+          <label className="flex flex-col gap-2 text-sm font-medium text-neutral-700">
+            AI profile
+            <select
+              className="h-11 rounded-xl border border-neutral-700 bg-neutral-900 px-3 text-sm text-neutral-100"
+              value={aiConfigId ?? ""}
+              onChange={(event) =>
+                setAiConfigId(event.target.value ? Number(event.target.value) : undefined)
+              }
+            >
+              <option value="">Default AI profile</option>
+              {aiConfigs.map((config) => (
+                <option key={config.id} value={config.id}>
+                  {config.name} - {getProviderLabel(config.provider)} - {config.model}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
         <Button
           className="w-full md:w-auto"
           disabled={isBusy || !jobDescription.trim()}
-          onClick={() => onGenerate({ templateId, promptId })}
+          onClick={() => onGenerate({ templateId, promptId, aiConfigId })}
         >
           {isBusy ? "Generating..." : "Generate resume"}
         </Button>

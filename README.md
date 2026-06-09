@@ -49,8 +49,11 @@ Set these env vars:
 
 - `OPENAI_API_KEY` (required if not storing per-user AI profiles)
 - `OPENAI_MODEL` (optional, defaults to `gpt-4o-mini`)
+- `AI_API_KEY` (optional neutral alias for non-OpenAI default providers)
+- `AI_MODEL` (optional neutral alias for non-OpenAI default providers)
 - `AI_PROVIDER` (optional, defaults to `openai`)
 - `AI_BASE_URL` (optional, for OpenAI-compatible providers)
+- `AI_REQUEST_TIMEOUT_MS` (optional, defaults to 55000; keep at or below your host function limit)
 
 ## Local Setup (Brief)
 
@@ -69,6 +72,7 @@ ENCRYPTION_KEY=base64_32_byte_key
 OPENAI_API_KEY=your_openai_key
 OPENAI_MODEL=gpt-4o-mini
 AI_PROVIDER=openai
+AI_REQUEST_TIMEOUT_MS=55000
 # AI_BASE_URL=https://openrouter.ai/api/v1
 ```
 
@@ -89,7 +93,7 @@ npm run dev
 - New accounts seed a default template and prompt from `src/seed/`.
 - GitHub/AI provider profiles are per-user and encrypted at rest.
 - Built-in provider choices include OpenAI, OpenRouter, Groq, Together AI,
-  DeepSeek, xAI, and custom OpenAI-compatible APIs.
+  DeepSeek, xAI, Gemini, Claude, and custom OpenAI-compatible APIs.
 
 ---
 

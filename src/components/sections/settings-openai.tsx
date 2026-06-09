@@ -11,7 +11,11 @@ import {
   updateOpenAiConfig,
   OpenAiConfigRecord,
 } from "@/lib/api";
-import { AI_PROVIDERS, getProviderBaseUrl } from "@/lib/ai-providers";
+import {
+  AI_PROVIDERS,
+  getProviderBaseUrl,
+  getProviderModels,
+} from "@/lib/ai-providers";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
@@ -45,6 +49,10 @@ export function SettingsOpenAI() {
   const [error, setError] = useState<string | null>(null);
   const [hasKey, setHasKey] = useState(false);
   const { push } = useToast();
+  const providerModels = getProviderModels(provider);
+  const selectedModelValue = providerModels.some((item) => item.id === model)
+    ? model
+    : "__custom";
 
   const loadConfigs = async () => {
     try {
@@ -248,7 +256,7 @@ export function SettingsOpenAI() {
                   <span className="text-sm font-semibold">{config.name}</span>
                 </div>
                 <span className="text-xs text-slate-400">
-                  {AI_PROVIDERS.find((item) => item.id === config.provider)?.label || config.provider} · {config.model}
+                  {AI_PROVIDERS.find((item) => item.id === config.provider)?.label || config.provider} - {config.model}
                 </span>
               </div>
               <div className="flex items-center gap-1">
@@ -331,8 +339,10 @@ export function SettingsOpenAI() {
             value={provider}
             onChange={(event) => {
               const nextProvider = event.target.value;
+              const nextModels = getProviderModels(nextProvider);
               setProvider(nextProvider);
               setBaseUrl(getProviderBaseUrl(nextProvider, "") || "");
+              setModel(nextModels[0]?.id || "");
             }}
           >
             {AI_PROVIDERS.map((item) => (
@@ -362,11 +372,28 @@ export function SettingsOpenAI() {
               )}
             </button>
           </div>
-          <Input
-            placeholder="Model (e.g., gpt-4o-mini, openai/gpt-4o-mini, llama-3.3-70b-versatile)"
-            value={model}
-            onChange={(event) => setModel(event.target.value)}
-          />
+          <select
+            className="h-11 w-full rounded-xl border border-[#2a2f55] bg-[#0f1228] px-4 text-sm text-slate-100 outline-none transition focus:border-indigo-400"
+            value={selectedModelValue}
+            onChange={(event) => {
+              const nextModel = event.target.value;
+              setModel(nextModel === "__custom" ? "" : nextModel);
+            }}
+          >
+            {providerModels.map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.label}{"thinking" in item && item.thinking ? " (thinking)" : ""}
+              </option>
+            ))}
+            <option value="__custom">Custom model ID</option>
+          </select>
+          {selectedModelValue === "__custom" && (
+            <Input
+              placeholder="Custom model ID"
+              value={model}
+              onChange={(event) => setModel(event.target.value)}
+            />
+          )}
           <Input
             placeholder="Base URL (optional for listed providers)"
             value={baseUrl}

@@ -8,6 +8,7 @@ import { getUserId } from "@/lib/auth";
 import { decryptSecret } from "@/lib/crypto";
 
 export const runtime = "nodejs";
+export const maxDuration = 60;
 
 export async function POST(request: Request) {
   const userId = await getUserId();

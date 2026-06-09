@@ -3,7 +3,7 @@ import { and, eq } from "drizzle-orm";
 
 import { db } from "@/db";
 import { githubConfigs, openaiConfigs, prompts, runs, templates, users } from "@/db/schema";
-import { createAiClient } from "@/lib/ai";
+import { generateJsonObject, generateText } from "@/lib/ai";
 import { getUserId } from "@/lib/auth";
 import { decryptSecret } from "@/lib/crypto";
 import { buildPrompt } from "@/lib/prompt";
@@ -11,6 +11,7 @@ import { buildResumeFilename, uploadLatexToGitHub, buildOverleafUrl } from "@/li
 import { validateLatexOutput } from "@/lib/validation";
 
 export const runtime = "nodejs";
+export const maxDuration = 60;
 
 export async function POST(request: Request) {
   const userId = await getUserId();
@@ -22,6 +23,7 @@ export async function POST(request: Request) {
   const jobDescription = String(body?.jobDescription || "").trim();
   const templateId = body?.templateId ? Number(body.templateId) : null;
   const promptId = body?.promptId ? Number(body.promptId) : null;
+  const aiConfigId = body?.aiConfigId ? Number(body.aiConfigId) : null;
 
   if (!jobDescription) {
     return NextResponse.json(
@@ -96,11 +98,28 @@ export async function POST(request: Request) {
     .from(githubConfigs)
     .where(and(eq(githubConfigs.isDefault, true), eq(githubConfigs.userId, userId)))
     .limit(1);
-  const [defaultOpenAi] = await db
-    .select()
-    .from(openaiConfigs)
-    .where(and(eq(openaiConfigs.isDefault, true), eq(openaiConfigs.userId, userId)))
-    .limit(1);
+  let selectedAiConfig = null;
+  if (aiConfigId != null) {
+    [selectedAiConfig] = await db
+      .select()
+      .from(openaiConfigs)
+      .where(and(eq(openaiConfigs.id, aiConfigId), eq(openaiConfigs.userId, userId)))
+      .limit(1);
+    if (!selectedAiConfig) {
+      return NextResponse.json(
+        { error: "Selected AI profile not found." },
+        { status: 404 }
+      );
+    }
+  }
+
+  const [defaultOpenAi] = selectedAiConfig
+    ? [selectedAiConfig]
+    : await db
+        .select()
+        .from(openaiConfigs)
+        .where(and(eq(openaiConfigs.isDefault, true), eq(openaiConfigs.userId, userId)))
+        .limit(1);
 
   const promptText = buildPrompt({
     jobDescription,
@@ -110,7 +129,7 @@ export async function POST(request: Request) {
 
   const apiKey = defaultOpenAi?.apiKey
     ? decryptSecret(defaultOpenAi.apiKey)
-    : process.env.OPENAI_API_KEY;
+    : process.env.AI_API_KEY || process.env.OPENAI_API_KEY;
   if (!apiKey) {
     return NextResponse.json(
       { error: "AI provider API key not configured." },
@@ -118,11 +137,9 @@ export async function POST(request: Request) {
     );
   }
 
-  const model = defaultOpenAi?.model || process.env.OPENAI_MODEL || "gpt-4o-mini";
+  const model = defaultOpenAi?.model || process.env.AI_MODEL || process.env.OPENAI_MODEL || "gpt-4o-mini";
   const provider = defaultOpenAi?.provider || process.env.AI_PROVIDER || "openai";
   const baseUrl = defaultOpenAi?.baseUrl || process.env.AI_BASE_URL;
-
-  const ai = createAiClient({ apiKey, provider, baseUrl });
 
   const [user] = await db
     .select({ name: users.name })
@@ -143,15 +160,19 @@ export async function POST(request: Request) {
   let jobId = "";
 
   try {
-    const infoResponse = await ai.chat.completions.create({
+    const parsed = await generateJsonObject<{
+      company?: unknown;
+      title?: unknown;
+      id?: unknown;
+    }>({
+      apiKey,
       model,
-      messages: [{ role: "user", content: jobInfoPrompt }],
+      provider,
+      baseUrl,
+      prompt: jobInfoPrompt,
       temperature: 0,
-      response_format: { type: "json_object" },
-      max_tokens: 200,
+      maxTokens: 300,
     });
-    const rawInfo = infoResponse.choices[0]?.message?.content ?? "";
-    const parsed = JSON.parse(rawInfo);
     company = typeof parsed.company === "string" ? parsed.company : "";
     title = typeof parsed.title === "string" ? parsed.title : "";
     jobId = typeof parsed.id === "string" ? parsed.id : "";
@@ -161,13 +182,15 @@ export async function POST(request: Request) {
     jobId = "";
   }
 
-  const completion = await ai.chat.completions.create({
+  const latex = await generateText({
+    apiKey,
     model,
-    messages: [{ role: "user", content: promptText }],
+    provider,
+    baseUrl,
+    prompt: promptText,
     temperature: 0.4,
+    maxTokens: 12000,
   });
-
-  const latex = completion.choices[0]?.message?.content ?? "";
   const validation = validateLatexOutput(latex);
 
   if (!validation.valid) {

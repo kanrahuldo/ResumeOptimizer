@@ -47,7 +47,11 @@ import {
   updateAdminTemplate,
   updateAdminUser,
 } from "@/lib/admin-api";
-import { AI_PROVIDERS, getProviderBaseUrl } from "@/lib/ai-providers";
+import {
+  AI_PROVIDERS,
+  getProviderBaseUrl,
+  getProviderModels,
+} from "@/lib/ai-providers";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -127,6 +131,12 @@ export function AdminPanel() {
 
   const [showGithubToken, setShowGithubToken] = useState(false);
   const [showOpenAiKey, setShowOpenAiKey] = useState(false);
+  const openAiProviderModels = getProviderModels(openaiForm.provider);
+  const selectedOpenAiModelValue = openAiProviderModels.some(
+    (item) => item.id === openaiForm.model
+  )
+    ? openaiForm.model
+    : "__custom";
   const [confirmDeleteUserId, setConfirmDeleteUserId] = useState<string | null>(null);
   const [confirmDeleteConfigId, setConfirmDeleteConfigId] = useState<number | null>(null);
   const [confirmDeleteOpenAiId, setConfirmDeleteOpenAiId] = useState<number | null>(null);
@@ -1182,7 +1192,7 @@ export function AdminPanel() {
                           {config.isDefault && <Badge variant="success">Default</Badge>}
                         </div>
                         <span className="text-xs text-slate-400">
-                          {AI_PROVIDERS.find((item) => item.id === config.provider)?.label || config.provider} · {config.model}
+                          {AI_PROVIDERS.find((item) => item.id === config.provider)?.label || config.provider} - {config.model}
                         </span>
                       </div>
                       <div className="flex items-center gap-1">
@@ -1227,22 +1237,17 @@ export function AdminPanel() {
                         setOpenaiForm((prev) => ({ ...prev, name: event.target.value }))
                       }
                     />
-                    <Input
-                      placeholder="Model"
-                      value={openaiForm.model}
-                      onChange={(event) =>
-                        setOpenaiForm((prev) => ({ ...prev, model: event.target.value }))
-                      }
-                    />
                     <select
                       className="h-11 w-full rounded-xl border border-[#2a2f55] bg-[#0f1228] px-4 text-sm text-slate-100 outline-none transition focus:border-indigo-400"
                       value={openaiForm.provider}
                       onChange={(event) => {
                         const nextProvider = event.target.value;
+                        const nextModels = getProviderModels(nextProvider);
                         setOpenaiForm((prev) => ({
                           ...prev,
                           provider: nextProvider,
                           baseUrl: getProviderBaseUrl(nextProvider, "") || "",
+                          model: nextModels[0]?.id || "",
                         }));
                       }}
                     >
@@ -1252,6 +1257,33 @@ export function AdminPanel() {
                         </option>
                       ))}
                     </select>
+                    <select
+                      className="h-11 w-full rounded-xl border border-[#2a2f55] bg-[#0f1228] px-4 text-sm text-slate-100 outline-none transition focus:border-indigo-400"
+                      value={selectedOpenAiModelValue}
+                      onChange={(event) => {
+                        const nextModel = event.target.value;
+                        setOpenaiForm((prev) => ({
+                          ...prev,
+                          model: nextModel === "__custom" ? "" : nextModel,
+                        }));
+                      }}
+                    >
+                      {openAiProviderModels.map((item) => (
+                        <option key={item.id} value={item.id}>
+                          {item.label}{"thinking" in item && item.thinking ? " (thinking)" : ""}
+                        </option>
+                      ))}
+                      <option value="__custom">Custom model ID</option>
+                    </select>
+                    {selectedOpenAiModelValue === "__custom" && (
+                      <Input
+                        placeholder="Custom model ID"
+                        value={openaiForm.model}
+                        onChange={(event) =>
+                          setOpenaiForm((prev) => ({ ...prev, model: event.target.value }))
+                        }
+                      />
+                    )}
                     <Input
                       placeholder="Base URL (optional)"
                       value={openaiForm.baseUrl}
