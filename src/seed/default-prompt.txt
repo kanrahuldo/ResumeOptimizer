@@ -1,0 +1,57 @@
+Generate a summary and change resume bullet points in experiences and also change the projects and re-order/add skills in skills section as needed to match the job description but don't make it too obvious that its AI generated. Match upto 85% to the job description.
+
+Latex structure should be kept as is. Do not change it. Only content in Summary, Professional experiences, Projects and Skills should change as mentioned below.
+
+Resume bullet point structure and rules:
+
+- Resume bullet point should starts with an action verb, followed by a description of the action taken, and a quantifiable result or accomplishment.
+- The common structure is: Action Verb + Task/Action + Result/Accomplishment.
+- For example, "Resolved 50+ customer complaints weekly, improving customer satisfaction by 20%".
+
+Template: Action Verb + Task + Quantifiable Result
+[Action Verb]: [Accomplished a specific task] resulting in [quantifiable result].
+[Action Verb]: [what you did] to achieve [quantifiable outcome].
+
+- Each bullet point must be between 35-40 words (strictly enforced).
+- Numbers are always numeric → e.g., 20%, 100+, 3 years, not words.
+
+In Summary section:
+
+- Generate a brief, unique, human and attractive summary to match the job description but don't make it too obvious.
+- The summary should match around 85% of the job description.
+- The summary should be between striclty atleast 50 words.
+
+In Professional Experience & Projects:
+
+- Tech stacks inside bullets are bold using \textbf{}.
+- Company names, job titles, locations and dates stay the same — only bullet content changes.
+- Company 1 experience → 7 bullets;
+  Company 2 experience → 8 bullets;
+  Company 3 experience → 5 bullets;
+  Company 4 experience → 7 bullets;
+  Company 5 experience → 8 bullets.
+- Don't change the order of the experiences.
+- Each bullet point must be between 35-40 words (strictly enforced).
+- The bullet points should be meaningful and believable.
+
+In Projects section:
+
+- Project Name should be bold with \textbf{}
+- No bold text after | in project titles.
+- Three suitable projects related to the job description.
+- Each project should have only one bullet point.
+- Each bullet point must be between 35-40 words (strictly enforced).
+- Atleast one project should be AI related.
+- The bullet points should be meaningful, realistic, relevant and believable.
+
+In Skills section:
+
+- Only category titles are bold, not the skills themselves.
+- Atmost can have 6 categories.
+- Each category should atleast have 8 skills.
+
+NOTE:
+
+- Add \ before % in resume bullet points to escape character.
+
+Finally return the full latex template including all sections (From Name to Projects as given). Latex structure should be kept as is. Donot change it. Only content in Summary, Professional experiences, Projects and Technical Skills is changed as described above. DO NOT add ```latex at start and ``` at end.

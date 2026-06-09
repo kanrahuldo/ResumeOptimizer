@@ -1,0 +1,55 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1769032195331,
+      "tag": "0000_calm_vindicator",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1769034828165,
+      "tag": "0001_sleepy_shocker",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1769042316917,
+      "tag": "0002_sour_garia",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1769042547428,
+      "tag": "0003_square_retro_girl",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1769045443253,
+      "tag": "0004_cute_tinkerer",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1769206428402,
+      "tag": "0005_mighty_zeigeist",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1781022079328,
+      "tag": "0006_ai_provider_profiles",
+      "breakpoints": true
+    }
+  ]
+}

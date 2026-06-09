@@ -1,0 +1,240 @@
+\documentclass[letterpaper,10pt]{article}
+
+\usepackage{helvet}      
+\renewcommand\familydefault{\sfdefault} 
+
+\usepackage{latexsym}
+\usepackage[empty]{fullpage}
+\usepackage{titlesec}
+\usepackage{marvosym}
+\usepackage[usenames,dvipsnames]{color}
+\usepackage{verbatim}
+\usepackage{enumitem}
+\usepackage[hidelinks]{hyperref}
+\usepackage{fancyhdr}
+\usepackage[english]{babel}
+\usepackage{tabularx}
+\usepackage{fontawesome5}
+\usepackage{multicol}
+\usepackage{makecell}
+\usepackage[T1]{fontenc}
+\setlength{\multicolsep}{-3.0pt}
+\setlength{\columnsep}{-1pt}
+\input{glyphtounicode}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyfoot{}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt}
+
+\addtolength{\oddsidemargin}{-0.6in}
+\addtolength{\evensidemargin}{-0.5in}
+\addtolength{\textwidth}{1.19in}
+\addtolength{\topmargin}{-.7in}
+\addtolength{\textheight}{1.4in}
+
+\urlstyle{same}
+
+\raggedbottom
+\raggedright
+\setlength{\tabcolsep}{0in}
+
+\titleformat{\section}{
+  \vspace{-4pt}\raggedright\fontsize{9pt}{10pt}\selectfont\bfseries
+}{}{0em}{\MakeUppercase}[\color{black}\titlerule \vspace{-5pt}]
+
+\pdfgentounicode=1
+
+\newcommand{\educationItem}[1]{
+  \item\small{
+    {#1 \vspace{-2pt}}
+  }
+}
+
+\newcommand{\resumeItem}[1]{
+  \item{\fontsize{8pt}{9pt}\selectfont
+    #1 \vspace{-3pt}
+  }
+}
+
+\newcommand{\classesList}[4]{
+    \item\small{
+        {#1 #2 #3 #4 \vspace{-2pt}}
+  }
+}
+
+\newcommand{\resumeSubheading}[4]{
+  \vspace{-2pt}\item
+    \begin{tabular*}{1.0\textwidth}[t]{l@{\extracolsep{\fill}}r}
+      \textbf{\fontsize{8.5pt}{10pt}\selectfont #3}, \textbf{\fontsize{8.5pt}{10pt}\selectfont #1}, \fontsize{8.5pt}{10pt}\selectfont #4 & \textbf{\fontsize{8.5pt}{10pt}\selectfont #2} \\
+    \end{tabular*}\vspace{-7pt}
+}
+
+\newcommand{\educationSubheading}[4]{
+  \vspace{-2pt}\item
+    \begin{tabular*}{1.001\textwidth}[t]{l@{\extracolsep{\fill}}r}
+      \textbf{\small #1} & \textbf{\fontsize{8.5pt}{10pt} #2} \\
+      {\small#3} & {\small #4} \\
+    \end{tabular*}\vspace{-7pt}
+}
+
+\newcommand{\resumeSubSubheading}[2]{
+    \vspace{-7pt}\item
+    \begin{tabular*}{1\textwidth}{l@{\extracolsep{\fill}}r}
+      \textit{\small#1} & \textit{\small #2} \\
+    \end{tabular*}\vspace{-7pt}
+}
+
+\newcommand{\courses}[1]{
+  \item\textit{\scriptsize#1}
+}
+
+\newcommand{\resumeProjectHeading}[2]{
+    \item
+    \begin{tabular*}{1.001\textwidth}{l@{\extracolsep{\fill}}r}
+      \fontsize{8.5pt}{10pt}#1 & \textbf{\fontsize{8.5pt}{10pt} #2}\\
+    \end{tabular*}\vspace{-7pt}
+}
+
+\newcommand{\resumeSubItem}[1]{\resumeItem{#1}\vspace{-4pt}}
+
+\renewcommand\labelitemi{$\vcenter{\hbox{\tiny$\bullet$}}$}
+\renewcommand\labelitemii{$\vcenter{\hbox{\tiny$\bullet$}}$}
+
+\newcommand{\resumeSubHeadingListStart}{\begin{itemize}[leftmargin=0pt, label={}]}
+\newcommand{\resumeSubHeadingListEnd}{\end{itemize}}
+\newcommand{\resumeItemListStart}{\begin{itemize}[leftmargin=*]}
+\newcommand{\resumeItemListEnd}{\end{itemize}\vspace{-5pt}}
+
+\begin{document}
+
+\begin{center}
+    {\fontsize{14pt}{12pt}\selectfont \textbf{\MakeUppercase{Firstname Lastname}}}\\ \vspace{2pt}
+    \fontsize{10pt}{12pt}\selectfont (000) 000-0000 ~ | ~ \href{mailto:firstname.lastname@email.com}{firstname.lastname@email.com} ~ | ~  
+    \href{https://www.linkedin.com/in/your-linkedin-handle/}{\color{blue}\underline{LinkedIn}}  ~ | ~ 
+    \href{https://github.com/your-github-handle}{\color{blue}\underline{GitHub}} ~ | ~ 
+    \href{https://your-portfolio-site.com/}{\color{blue}\underline{Portfolio}}
+    \vspace{-8pt}
+\end{center}
+
+\section{Summary}
+\vspace{-2pt}\fontsize{8pt}{9pt}\selectfont
+Motivated software professional with X+ years of experience building scalable applications. Skilled in full-stack development, automation, and cloud-native delivery. Strong collaborator with a focus on secure engineering, performance, and reliable deployment practices.
+ \vspace{-5pt}
+ 
+\vspace{-2pt}
+\section{Professional Experience}
+  \resumeSubHeadingListStart
+    \resumeSubheading
+        {Company 1}{MM/YYYY – MM/YYYY}
+        {Role 1}{City, ST}
+      \resumeItemListStart
+        \resumeItem{Developed responsive web features using \textbf{Framework A} and \textbf{Language A}, improving usability and reducing UI defects by X\%.}
+        \resumeItem{Implemented RESTful services in \textbf{Backend Tech}, adding validation and pagination to support scalable data access.}
+        \resumeItem{Optimized database queries and indexing in \textbf{Database Tech}, reducing average query latency by X\%.}
+        \resumeItem{Integrated authentication and authorization controls, strengthening access security across key workflows.}
+        \resumeItem{Automated build and deployment steps using \textbf{CI/CD Tooling}, improving release reliability and speed.}
+        \resumeItem{Collaborated with cross-functional teams to deliver features end-to-end, from design to production support.}
+      \resumeItemListEnd
+
+    \resumeSubheading
+        {Company 2}{MM/YYYY – MM/YYYY}
+        {Role 2}{City, ST}
+      \resumeItemListStart
+        \resumeItem{Designed and built a \textbf{SaaS}-style module using \textbf{Frontend Tech} and \textbf{Backend Tech}, supporting concurrent users at scale.}
+        \resumeItem{Created automated scripts in \textbf{Scripting Language} to process and validate large datasets, reducing manual effort by X\%.}
+        \resumeItem{Implemented third-party integrations (payments, messaging, analytics) with secure credential handling and monitoring.}
+        \resumeItem{Improved application performance through caching and component-level rendering optimizations.}
+        \resumeItem{Enhanced observability with logs, metrics, and alerts, improving incident response times by X\%.}
+      \resumeItemListEnd
+
+    \resumeSubheading
+        {Company 3}{MM/YYYY – MM/YYYY}
+        {Role 3}{City, ST}
+      \resumeItemListStart
+        \resumeItem{Supported lab and development environments by maintaining \textbf{Linux/Unix} systems and enforcing secure configuration standards.}
+        \resumeItem{Assisted users with debugging and testing workflows, increasing successful delivery of assignments/projects by X\%.}
+        \resumeItem{Built automation tooling for validation and reporting, improving turnaround time and consistency of results.}
+        \resumeItem{Delivered technical sessions and documentation on core concepts and best practices.}
+      \resumeItemListEnd
+
+    \resumeSubheading
+        {Company 4}{MM/YYYY – MM/YYYY}
+        {Role 4}{City, ST}
+      \resumeItemListStart
+        \resumeItem{Built backend services in \textbf{Language/Framework}, improving throughput and reducing response times by X\%.}
+        \resumeItem{Implemented API integrations and monitoring to ensure reliable data exchange across services.}
+        \resumeItem{Developed UI improvements using \textbf{Frontend Framework}, enhancing user workflows and engagement.}
+        \resumeItem{Designed asynchronous processing using \textbf{Messaging/Queue Tech}, improving reliability and fault tolerance.}
+        \resumeItem{Created CI/CD pipelines with \textbf{Tooling}, reducing deployment effort and release risk.}
+      \resumeItemListEnd
+
+    \resumeSubheading
+        {Company 5}{MM/YYYY – MM/YYYY}
+        {Role 5}{City, ST}
+      \resumeItemListStart
+        \resumeItem{Collaborated on a multi-service platform following SDLC best practices, including reviews, testing, and documentation.}
+        \resumeItem{Developed microservices in \textbf{Backend Framework} with \textbf{SQL/NoSQL} data stores to support scalable workloads.}
+        \resumeItem{Optimized database performance through query tuning and schema improvements, reducing latency by X\%.}
+        \resumeItem{Deployed services to \textbf{Cloud Provider}, leveraging containers and automation for reliable releases.}
+        \resumeItem{Implemented unit and integration tests to improve coverage and reduce regressions.}
+        \resumeItem{Investigated production issues using logging/monitoring tools, improving incident resolution time by X\%.}
+      \resumeItemListEnd
+  \resumeSubHeadingListEnd
+
+
+%%%% DON'T TOUCH THIS SECTION
+ \vspace{-12pt}
+\section{Education}
+  \resumeSubHeadingListStart
+    \educationSubheading
+      {University 1}{MM/YYYY -- MM/YYYY}
+      {Degree Name, Major/Concentration}{GPA: X.X/X.X}
+    \vspace{-8pt}
+    \educationSubheading
+      {University 2}{MM/YYYY -- MM/YYYY}
+      {Degree Name, Major/Concentration}{GPA: X.XX/X.XX}
+  \resumeSubHeadingListEnd
+%%%%%%
+
+\section{Technical Skills}
+        \vspace{-14pt}
+        \begin{table}[h]
+            \fontsize{8pt}{9pt}\selectfont
+            \begin{tabular}{p{0.3\linewidth} p{0.7\linewidth}}
+                \textbf{Programming \& Scripting:} & Language A, Language B, Language C, Language D, Language E \\
+                \textbf{Web Development \& Frameworks:} & Framework A, Framework B, Framework C, Framework D \\
+                \textbf{Database \& Data Storage:} & Database A, Database B, Database C, Cache/Queue Tech \\
+                \textbf{DevOps \& Cloud:} & Cloud A, Containers, CI/CD Tool, IaC Tool, Orchestration Tool \\
+                \textbf{Tools \& Other Technologies:} & OS/Tools A, Version Control, Testing Tools, Observability Tools \\
+                \textbf{AI \& Automation:} & AI Tooling A, LLM Integration, Workflow Automation, Prompting/Agents \\
+            \end{tabular}
+        \end{table}
+ \vspace{-18pt}
+
+\section{Projects}
+    \vspace{-5pt}
+    \resumeSubHeadingListStart
+          \resumeProjectHeading
+            {\textbf{Project 1} $|$ Tech Stack A, Tech Stack B, Tech Stack C}{}
+            \resumeItemListStart
+                \resumeItem{Built an end-to-end feature that ingests data, processes it, and presents results in a user-friendly UI, reducing manual effort by X\% and improving consistency.}
+            \resumeItemListEnd
+        \vspace{-12pt}
+    
+        \resumeProjectHeading
+            {\textbf{Project 2} $|$ Tech Stack A, Tech Stack B, Tech Stack C}{}
+        \resumeItemListStart
+                \resumeItem{Implemented core functionality with scalable architecture and background processing, improving performance and reliability under load.}
+        \resumeItemListEnd
+      \vspace{-12pt}
+
+      \resumeProjectHeading
+        {\textbf{Project 3} $|$ Tech Stack A, Tech Stack B, Tech Stack C}{}
+    \resumeItemListStart
+            \resumeItem{Developed a real-time or interactive application with secure access controls and persistent storage, supporting X+ users and key workflows.}
+    \resumeItemListEnd
+    \resumeSubHeadingListEnd
+
+\end{document}
