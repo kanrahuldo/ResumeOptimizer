@@ -21,7 +21,7 @@ Resume Optimizer is built for rapid, repeatable resume customization:
 
 ## Website
 
-- https://resumeoptimizer-2pqu.onrender.com
+- Deploy your own instance on Render, Vercel, or any Docker-capable host.
 
 ## Architecture
 
