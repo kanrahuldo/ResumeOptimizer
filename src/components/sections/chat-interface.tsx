@@ -99,6 +99,18 @@ function formatErrorDetails(details: unknown) {
   return details.map((item) => trimMessageContent(item)).filter(Boolean).join("\n");
 }
 
+function optionalStoredNumber(value: unknown) {
+  const numberValue = Number(value);
+  return Number.isFinite(numberValue) && numberValue > 0 ? numberValue : undefined;
+}
+
+function storedComposerHeight(value: unknown) {
+  const numberValue = Number(value);
+  return Number.isFinite(numberValue)
+    ? Math.max(200, Math.min(900, numberValue))
+    : 400;
+}
+
 async function readGenerateResponse(response: Response) {
   const contentType = response.headers.get("content-type") || "";
   if (contentType.includes("application/json")) {
@@ -127,6 +139,7 @@ function ChatBubble({
 }) {
   const isUser = message.role === "user";
   const isSystem = message.role === "system";
+  const content = trimMessageContent(message.content);
 
   return (
     <div
@@ -149,7 +162,7 @@ function ChatBubble({
           </div>
         ) : (
           <div className="space-y-2 flex gap-1">
-            <p className="whitespace-pre-line mb-0">{message.content}</p>
+            <p className="whitespace-pre-line mb-0">{content}</p>
             {message.overleafUrl && (
               <a
                 className="inline-flex items-center gap-2 text-teal-300 underline-offset-4 hover:underline"
@@ -164,7 +177,7 @@ function ChatBubble({
               <div className="z-50 flex absolute bottom-[-24px] left-2 items-center gap-4 transition">
                 <button
                   type="button"
-                  onClick={() => onCopy(message.content)}
+                  onClick={() => onCopy(content)}
                   className="inline-flex items-center gap-1 text-xs text-slate-200 hover:text-white cursor-pointer"
                   aria-label="Copy job description"
                   title="Copy"
@@ -173,7 +186,7 @@ function ChatBubble({
                 </button>
                 <button
                   type="button"
-                  onClick={() => onRegenerate(message.content)}
+                  onClick={() => onRegenerate(content)}
                   className="inline-flex items-center gap-1 text-xs text-slate-200 hover:text-white cursor-pointer"
                   aria-label="Regenerate with this job description"
                   title="Regenerate"
@@ -226,19 +239,19 @@ export function ChatInterface() {
           isCustomModel?: boolean;
           composerHeight?: number;
         };
-        if (parsed.jobDescription) setJobDescription(parsed.jobDescription);
+        if (parsed.jobDescription) setJobDescription(trimMessageContent(parsed.jobDescription));
         const storedMessages = sanitizeStoredMessages(parsed.messages);
         if (storedMessages.length) {
           setMessages(storedMessages);
         } else {
           setMessages([defaultWelcome]);
         }
-        if (parsed.templateId) setTemplateId(parsed.templateId);
-        if (parsed.promptId) setPromptId(parsed.promptId);
-        if (parsed.aiConfigId) setAiConfigId(parsed.aiConfigId);
-        if (parsed.model) setModel(parsed.model);
-        if (parsed.isCustomModel) setIsCustomModel(true);
-        if (parsed.composerHeight) setComposerHeight(parsed.composerHeight);
+        setTemplateId(optionalStoredNumber(parsed.templateId));
+        setPromptId(optionalStoredNumber(parsed.promptId));
+        setAiConfigId(optionalStoredNumber(parsed.aiConfigId));
+        if (parsed.model) setModel(trimMessageContent(parsed.model));
+        setIsCustomModel(Boolean(parsed.isCustomModel));
+        setComposerHeight(storedComposerHeight(parsed.composerHeight));
       } catch {
         setMessages([defaultWelcome]);
       }
