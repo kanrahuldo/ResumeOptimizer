@@ -47,6 +47,57 @@ const defaultWelcome: ChatMessage = {
 };
 
 const GENERATE_TIMEOUT_MS = 305_000;
+const MAX_STORED_MESSAGES = 20;
+const MAX_STORED_MESSAGE_CHARS = 12_000;
+
+function toMessageContent(value: unknown) {
+  if (typeof value === "string") return value;
+  if (value == null) return "";
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return String(value);
+  }
+}
+
+function trimMessageContent(value: unknown) {
+  const content = toMessageContent(value);
+  return content.length > MAX_STORED_MESSAGE_CHARS
+    ? `${content.slice(0, MAX_STORED_MESSAGE_CHARS)}\n\n[Message truncated for browser storage.]`
+    : content;
+}
+
+function sanitizeStoredMessages(value: unknown): ChatMessage[] {
+  if (!Array.isArray(value)) return [];
+
+  return value
+    .slice(-MAX_STORED_MESSAGES)
+    .map((item, index) => {
+      const record = item as Partial<ChatMessage>;
+      const role =
+        record.role === "user" || record.role === "assistant" || record.role === "system"
+          ? record.role
+          : "assistant";
+      const wasPending = Boolean(record.isPending);
+
+      return {
+        id: typeof record.id === "string" ? record.id : `stored-${index}`,
+        role,
+        content: wasPending
+          ? "Previous generation was interrupted. Please retry."
+          : trimMessageContent(record.content),
+        isPending: false,
+        overleafUrl:
+          typeof record.overleafUrl === "string" ? record.overleafUrl : undefined,
+      };
+    })
+    .filter((message) => message.content || message.overleafUrl);
+}
+
+function formatErrorDetails(details: unknown) {
+  if (!Array.isArray(details)) return "";
+  return details.map((item) => trimMessageContent(item)).filter(Boolean).join("\n");
+}
 
 async function readGenerateResponse(response: Response) {
   const contentType = response.headers.get("content-type") || "";
@@ -176,8 +227,9 @@ export function ChatInterface() {
           composerHeight?: number;
         };
         if (parsed.jobDescription) setJobDescription(parsed.jobDescription);
-        if (parsed.messages?.length) {
-          setMessages(parsed.messages);
+        const storedMessages = sanitizeStoredMessages(parsed.messages);
+        if (storedMessages.length) {
+          setMessages(storedMessages);
         } else {
           setMessages([defaultWelcome]);
         }
@@ -206,7 +258,7 @@ export function ChatInterface() {
     if (!isHydrated || typeof window === "undefined") return;
     const payload = {
       jobDescription,
-      messages,
+      messages: sanitizeStoredMessages(messages),
       templateId,
       promptId,
       aiConfigId,
@@ -214,7 +266,27 @@ export function ChatInterface() {
       isCustomModel,
       composerHeight,
     };
-    window.sessionStorage.setItem(storageKey, JSON.stringify(payload));
+    try {
+      window.sessionStorage.setItem(storageKey, JSON.stringify(payload));
+    } catch {
+      try {
+        window.sessionStorage.setItem(
+          storageKey,
+          JSON.stringify({
+            jobDescription: trimMessageContent(jobDescription),
+            messages: [defaultWelcome],
+            templateId,
+            promptId,
+            aiConfigId,
+            model,
+            isCustomModel,
+            composerHeight,
+          })
+        );
+      } catch {
+        window.sessionStorage.removeItem(storageKey);
+      }
+    }
   }, [isHydrated, jobDescription, messages, templateId, promptId, aiConfigId, model, isCustomModel, composerHeight]);
 
   const scrollToBottom = (behavior: ScrollBehavior = "smooth") => {
@@ -394,8 +466,8 @@ export function ChatInterface() {
                   ...message,
                   isPending: false,
                   content:
-                    json.details?.join("\n") ||
-                    json.error ||
+                    formatErrorDetails(json.details) ||
+                    trimMessageContent(json.error) ||
                     "Generation failed.",
                 }
               : message
