@@ -46,6 +46,25 @@ const defaultWelcome: ChatMessage = {
     "Paste a job description to generate a tailored LaTeX resume. I will return an Overleaf link when it is ready.",
 };
 
+const GENERATE_TIMEOUT_MS = 305_000;
+
+async function readGenerateResponse(response: Response) {
+  const contentType = response.headers.get("content-type") || "";
+  if (contentType.includes("application/json")) {
+    return (await response.json()) as GenerateResponse;
+  }
+
+  const text = await response.text();
+  return {
+    data: {
+      outputUrl: "",
+      overleafUrl: "",
+      latex: "",
+    },
+    error: text || "Generation failed.",
+  };
+}
+
 function ChatBubble({
   message,
   onCopy,
@@ -123,6 +142,7 @@ export function ChatInterface() {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const inFlightRef = useRef(false);
   const { push } = useToast();
   const storageKey = "resume-optimizer-chat";
   const [jobDescription, setJobDescription] = useState("");
@@ -315,7 +335,7 @@ export function ChatInterface() {
 
   const handleGenerate = async (overrideText?: string) => {
     const nextText = String(overrideText ?? jobDescription ?? "");
-    if (!nextText.trim() || isBusy) return;
+    if (!nextText.trim() || isBusy || inFlightRef.current) return;
     if (!selectedAiConfig || !model.trim()) {
       push({
         title: "Choose an AI profile and model before generating.",
@@ -338,15 +358,20 @@ export function ChatInterface() {
     };
 
     setMessages((prev) => [...prev, userMessage, pendingMessage]);
+    inFlightRef.current = true;
     setIsBusy(true);
     if (!overrideText) {
       setJobDescription("");
     }
 
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), GENERATE_TIMEOUT_MS);
+
     try {
       const response = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        signal: controller.signal,
         body: JSON.stringify({
           jobDescription: userMessage.content,
           templateId,
@@ -355,7 +380,7 @@ export function ChatInterface() {
           model: model.trim(),
         }),
       });
-      const json = (await response.json()) as GenerateResponse;
+      const json = await readGenerateResponse(response);
 
       if (!response.ok) {
         push({
@@ -393,25 +418,27 @@ export function ChatInterface() {
         )
       );
     } catch (error) {
-      push({
-        title: error instanceof Error ? error.message : "Generation failed.",
-        variant: "error",
-      });
+      const errorMessage =
+        error instanceof DOMException && error.name === "AbortError"
+          ? "The request took too long and was stopped. Try a faster model or retry in a moment."
+          : error instanceof Error
+          ? error.message
+          : "Generation failed.";
+      push({ title: errorMessage, variant: "error" });
       setMessages((prev) =>
         prev.map((message) =>
           message.id === pendingMessage.id
             ? {
                 ...message,
                 isPending: false,
-                content:
-                  error instanceof Error
-                    ? error.message
-                    : "Generation failed.",
+                content: errorMessage,
               }
             : message
         )
       );
     } finally {
+      window.clearTimeout(timeoutId);
+      inFlightRef.current = false;
       setIsBusy(false);
     }
   };

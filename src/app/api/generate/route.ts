@@ -3,7 +3,7 @@ import { and, eq } from "drizzle-orm";
 
 import { db } from "@/db";
 import { githubConfigs, openaiConfigs, prompts, runs, templates, users } from "@/db/schema";
-import { generateJsonObject, generateText } from "@/lib/ai";
+import { generateText } from "@/lib/ai";
 import { getUserId } from "@/lib/auth";
 import { decryptSecret } from "@/lib/crypto";
 import { buildPrompt } from "@/lib/prompt";
@@ -13,25 +13,48 @@ import { validateLatexOutput } from "@/lib/validation";
 export const runtime = "nodejs";
 export const maxDuration = 300;
 
+function extractJobHints(jobDescription: string) {
+  const lines = jobDescription
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const companyLine = lines.find((line) =>
+    /company|employer|organization/i.test(line)
+  );
+  const titleLine = lines.find((line) =>
+    /title|role|position/i.test(line)
+  );
+  const jobIdMatch = jobDescription.match(
+    /\b(?:job|requisition|req|posting)\s*(?:id|#|number)?\s*[:#-]?\s*([A-Z0-9][A-Z0-9_-]{2,})\b/i
+  );
+
+  return {
+    company: companyLine?.replace(/^(company|employer|organization)\s*[:#-]?\s*/i, "") || "",
+    title: titleLine?.replace(/^(title|role|position)\s*[:#-]?\s*/i, "") || "",
+    id: jobIdMatch?.[1] || "",
+  };
+}
+
 export async function POST(request: Request) {
-  const userId = await getUserId();
-  if (!userId) {
-    return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
-  }
+  try {
+    const userId = await getUserId();
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+    }
 
-  const body = await request.json();
-  const jobDescription = String(body?.jobDescription || "").trim();
-  const templateId = body?.templateId ? Number(body.templateId) : null;
-  const promptId = body?.promptId ? Number(body.promptId) : null;
-  const aiConfigId = body?.aiConfigId ? Number(body.aiConfigId) : null;
-  const requestedModel = String(body?.model || "").trim();
+    const body = await request.json();
+    const jobDescription = String(body?.jobDescription || "").trim();
+    const templateId = body?.templateId ? Number(body.templateId) : null;
+    const promptId = body?.promptId ? Number(body.promptId) : null;
+    const aiConfigId = body?.aiConfigId ? Number(body.aiConfigId) : null;
+    const requestedModel = String(body?.model || "").trim();
 
-  if (!jobDescription) {
-    return NextResponse.json(
-      { error: "Job description is required." },
-      { status: 400 }
-    );
-  }
+    if (!jobDescription) {
+      return NextResponse.json(
+        { error: "Job description is required." },
+        { status: 400 }
+      );
+    }
 
   let selectedTemplate = null;
   if (templateId != null) {
@@ -148,40 +171,7 @@ export async function POST(request: Request) {
     .where(eq(users.id, userId))
     .limit(1);
 
-  const jobInfoPrompt = [
-    "Extract the company name, job title, and any job ID from this job description.",
-    "Return JSON only with keys: company, title, id.",
-    "Use empty string for missing values. Do not guess.",
-    "",
-    jobDescription,
-  ].join("\n");
-
-  let company = "";
-  let title = "";
-  let jobId = "";
-
-  try {
-    const parsed = await generateJsonObject<{
-      company?: unknown;
-      title?: unknown;
-      id?: unknown;
-    }>({
-      apiKey,
-      model,
-      provider,
-      baseUrl,
-      prompt: jobInfoPrompt,
-      temperature: 0,
-      maxTokens: 300,
-    });
-    company = typeof parsed.company === "string" ? parsed.company : "";
-    title = typeof parsed.title === "string" ? parsed.title : "";
-    jobId = typeof parsed.id === "string" ? parsed.id : "";
-  } catch {
-    company = "";
-    title = "";
-    jobId = "";
-  }
+  const { company, title, id: jobId } = extractJobHints(jobDescription);
 
   const latex = await generateText({
     apiKey,
@@ -235,4 +225,21 @@ export async function POST(request: Request) {
       latex,
     },
   });
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Generation failed.";
+    const isTimeout =
+      error instanceof Error &&
+      (error.name === "AbortError" || /timeout|timed out|aborted/i.test(message));
+
+    return NextResponse.json(
+      {
+        error: isTimeout
+          ? "The AI provider took too long to respond. Try a faster model or retry in a moment."
+          : "Generation failed.",
+        details: isTimeout ? undefined : [message],
+      },
+      { status: isTimeout ? 504 : 500 }
+    );
+  }
 }
