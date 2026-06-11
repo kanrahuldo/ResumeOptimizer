@@ -29,17 +29,23 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 
+const DEFAULT_PROVIDER = "openai";
+const DEFAULT_MODEL = getProviderModels(DEFAULT_PROVIDER)[0]?.id || "gpt-4o-mini";
+
 export function SettingsOpenAI() {
   const [configs, setConfigs] = useState<OpenAiConfigRecord[]>([]);
   const [name, setName] = useState("");
-  const [provider, setProvider] = useState("openai");
+  const [provider, setProvider] = useState(DEFAULT_PROVIDER);
+  const [model, setModel] = useState(DEFAULT_MODEL);
+  const [isCustomModel, setIsCustomModel] = useState(false);
   const [apiKey, setApiKey] = useState("");
   const [baseUrl, setBaseUrl] = useState("");
   const [showKey, setShowKey] = useState(false);
   const [isDefault, setIsDefault] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [originalName, setOriginalName] = useState("");
-  const [originalProvider, setOriginalProvider] = useState("openai");
+  const [originalProvider, setOriginalProvider] = useState(DEFAULT_PROVIDER);
+  const [originalModel, setOriginalModel] = useState(DEFAULT_MODEL);
   const [originalBaseUrl, setOriginalBaseUrl] = useState("");
   const [originalDefault, setOriginalDefault] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
@@ -47,7 +53,15 @@ export function SettingsOpenAI() {
   const [error, setError] = useState<string | null>(null);
   const [hasKey, setHasKey] = useState(false);
   const { push } = useToast();
-  const testModel = getProviderModels(provider)[0]?.id || "gpt-4o-mini";
+  const providerModels = getProviderModels(provider);
+  const modelIsListed = providerModels.some((item) => item.id === model);
+  const selectedModelValue = isCustomModel
+    ? "__custom"
+    : modelIsListed
+    ? model
+    : model
+    ? "__custom"
+    : "";
 
   const loadConfigs = async () => {
     try {
@@ -75,6 +89,11 @@ export function SettingsOpenAI() {
       setError("API key is required.");
       return;
     }
+    const nextModel = model.trim();
+    if (!nextModel) {
+      setError("Default model is required.");
+      return;
+    }
     setIsBusy(true);
     try {
       if (editingId) {
@@ -82,7 +101,7 @@ export function SettingsOpenAI() {
           name: name.trim(),
           provider,
           apiKey: apiKey.trim(),
-          model: testModel,
+          model: nextModel,
           baseUrl: baseUrl.trim(),
         });
         push({ title: "AI profile updated.", variant: "success" });
@@ -91,14 +110,16 @@ export function SettingsOpenAI() {
           name: name.trim(),
           provider,
           apiKey: apiKey.trim(),
-          model: testModel,
+          model: nextModel,
           baseUrl: baseUrl.trim(),
           isDefault,
         });
         push({ title: "AI profile created.", variant: "success" });
       }
       setName("");
-      setProvider("openai");
+      setProvider(DEFAULT_PROVIDER);
+      setModel(DEFAULT_MODEL);
+      setIsCustomModel(false);
       setApiKey("");
       setBaseUrl("");
       setIsDefault(false);
@@ -118,12 +139,19 @@ export function SettingsOpenAI() {
     setEditingId(config.id);
     setName(config.name);
     setProvider(config.provider || "openai");
+    const nextProviderModels = getProviderModels(config.provider);
+    const nextModel = config.model || nextProviderModels[0]?.id || "";
+    setModel(nextModel);
+    setIsCustomModel(
+      Boolean(nextModel) && !nextProviderModels.some((item) => item.id === nextModel)
+    );
     setApiKey(config.apiKey || "");
     setHasKey(Boolean(config.apiKey));
     setBaseUrl(config.baseUrl || "");
     setIsDefault(config.isDefault);
     setOriginalName(config.name);
     setOriginalProvider(config.provider || "openai");
+    setOriginalModel(config.model || getProviderModels(config.provider)[0]?.id || "");
     setOriginalBaseUrl(config.baseUrl || "");
     setOriginalDefault(config.isDefault);
   };
@@ -131,14 +159,17 @@ export function SettingsOpenAI() {
   const handleCancel = () => {
     setEditingId(null);
     setName("");
-    setProvider("openai");
+    setProvider(DEFAULT_PROVIDER);
+    setModel(DEFAULT_MODEL);
+    setIsCustomModel(false);
     setApiKey("");
     setHasKey(false);
     setBaseUrl("");
     setIsDefault(false);
     setShowKey(false);
     setOriginalName("");
-    setOriginalProvider("openai");
+    setOriginalProvider(DEFAULT_PROVIDER);
+    setOriginalModel(DEFAULT_MODEL);
     setOriginalBaseUrl("");
     setOriginalDefault(false);
     setError(null);
@@ -189,10 +220,16 @@ export function SettingsOpenAI() {
   const handleTest = async () => {
     setError(null);
     const nextApiKey = apiKey.trim();
-    const nextModel = testModel;
+    const nextModel = model.trim();
     const nextBaseUrl = baseUrl.trim();
     if (!nextApiKey && !hasKey) {
       const message = "Fill API key before testing.";
+      setError(message);
+      push({ title: message, variant: "error" });
+      return;
+    }
+    if (!nextModel) {
+      const message = "Choose a default model before testing.";
       setError(message);
       push({ title: message, variant: "error" });
       return;
@@ -247,6 +284,8 @@ export function SettingsOpenAI() {
                 </div>
                 <span className="text-xs text-slate-400">
                   {AI_PROVIDERS.find((item) => item.id === config.provider)?.label || config.provider}
+                  {" - "}
+                  {config.model}
                 </span>
               </div>
               <div className="flex items-center gap-1">
@@ -329,7 +368,10 @@ export function SettingsOpenAI() {
             value={provider}
             onChange={(event) => {
               const nextProvider = event.target.value;
+              const nextModels = getProviderModels(nextProvider);
               setProvider(nextProvider);
+              setModel(nextModels[0]?.id || "");
+              setIsCustomModel(nextModels.length === 0);
               setBaseUrl(getProviderBaseUrl(nextProvider, "") || "");
             }}
           >
@@ -339,6 +381,33 @@ export function SettingsOpenAI() {
               </option>
             ))}
           </select>
+          <label className="space-y-1 text-xs text-slate-300">
+            <div>Default model</div>
+            <select
+              className="h-11 w-full rounded-xl border border-[#2a2f55] bg-[#0f1228] px-4 text-sm text-slate-100 outline-none transition focus:border-indigo-400"
+              value={selectedModelValue}
+              onChange={(event) => {
+                const nextModel = event.target.value;
+                setIsCustomModel(nextModel === "__custom");
+                setModel(nextModel === "__custom" ? "" : nextModel);
+              }}
+            >
+              <option value="">Select model</option>
+              {providerModels.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.label}{"thinking" in item && item.thinking ? " (thinking)" : ""}
+                </option>
+              ))}
+              <option value="__custom">Custom model ID</option>
+            </select>
+          </label>
+          {selectedModelValue === "__custom" && (
+            <Input
+              placeholder="Custom model ID"
+              value={model}
+              onChange={(event) => setModel(event.target.value)}
+            />
+          )}
           <div className="relative">
             <Input
               type={showKey ? "text" : "password"}
@@ -374,7 +443,8 @@ export function SettingsOpenAI() {
               }}
               disabled={
                 isBusy ||
-                (!apiKey.trim() && !hasKey)
+                (!apiKey.trim() && !hasKey) ||
+                !model.trim()
               }
             >
               Test connection
@@ -384,10 +454,12 @@ export function SettingsOpenAI() {
               disabled={
                 isBusy ||
                 !name.trim() ||
+                !model.trim() ||
                 (!apiKey.trim() && !hasKey) ||
                 (editingId
                   ? name.trim() === originalName.trim() &&
                     provider === originalProvider &&
+                    model.trim() === originalModel.trim() &&
                     baseUrl.trim() === originalBaseUrl.trim() &&
                     !apiKey.trim() &&
                     isDefault === originalDefault

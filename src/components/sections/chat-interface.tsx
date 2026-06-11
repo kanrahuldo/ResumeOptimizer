@@ -111,6 +111,16 @@ function storedComposerHeight(value: unknown) {
     : 400;
 }
 
+function getDefaultModelForProfile(config?: OpenAiConfigRecord) {
+  if (!config) return "";
+  return config.model || getProviderModels(config.provider)[0]?.id || "";
+}
+
+function isCustomProfileModel(config: OpenAiConfigRecord, modelId: string) {
+  if (!modelId) return false;
+  return !getProviderModels(config.provider).some((item) => item.id === modelId);
+}
+
 async function readGenerateResponse(response: Response) {
   const contentType = response.headers.get("content-type") || "";
   if (contentType.includes("application/json")) {
@@ -353,8 +363,7 @@ export function ChatInterface() {
         setAiConfigId((prev) => prev ?? defaultAiConfig?.id);
         setModel((prev) => {
           if (prev) return prev;
-          const models = getProviderModels(defaultAiConfig?.provider);
-          return models[0]?.id || defaultAiConfig?.model || "";
+          return getDefaultModelForProfile(defaultAiConfig);
         });
       } catch (error) {
         push({
@@ -389,20 +398,9 @@ export function ChatInterface() {
       setIsCustomModel(false);
       return;
     }
-    const models = getProviderModels(selectedAiConfig.provider);
-    setModel((prev) => {
-      if (prev && models.some((item) => item.id === prev)) {
-        setIsCustomModel(false);
-        return prev;
-      }
-      if (prev) {
-        setIsCustomModel(true);
-        return prev;
-      }
-      const fallbackModel = models[0]?.id || selectedAiConfig.model || "";
-      setIsCustomModel(false);
-      return fallbackModel;
-    });
+    const defaultModel = getDefaultModelForProfile(selectedAiConfig);
+    setModel(defaultModel);
+    setIsCustomModel(isCustomProfileModel(selectedAiConfig, defaultModel));
   }, [selectedAiConfig]);
 
   const helperText = useMemo(() => {
@@ -690,10 +688,12 @@ export function ChatInterface() {
                         ? Number(event.target.value)
                         : undefined;
                       const nextConfig = aiConfigs.find((config) => config.id === nextId);
-                      const nextModels = getProviderModels(nextConfig?.provider);
+                      const nextModel = getDefaultModelForProfile(nextConfig);
                       setAiConfigId(nextId);
-                      setIsCustomModel(false);
-                      setModel(nextModels[0]?.id || nextConfig?.model || "");
+                      setIsCustomModel(
+                        nextConfig ? isCustomProfileModel(nextConfig, nextModel) : false
+                      );
+                      setModel(nextModel);
                     }}
                   >
                     <option value="">Select AI profile</option>
