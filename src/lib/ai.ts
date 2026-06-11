@@ -35,7 +35,6 @@ type GenerateTextOptions = {
   provider?: string | null;
   baseUrl?: string | null;
   prompt: string;
-  temperature?: number;
   maxTokens?: number;
   json?: boolean;
 };
@@ -62,7 +61,6 @@ async function generateWithGemini(options: GenerateTextOptions) {
     body: JSON.stringify({
       contents: [{ role: "user", parts: [{ text: options.prompt }] }],
       generationConfig: {
-        temperature: options.temperature,
         maxOutputTokens: options.maxTokens,
         responseMimeType: options.json ? "application/json" : undefined,
       },
@@ -88,7 +86,6 @@ async function generateWithAnthropic(options: GenerateTextOptions) {
     body: JSON.stringify({
       model: options.model,
       max_tokens: options.maxTokens || 8192,
-      temperature: options.temperature,
       messages: [{ role: "user", content: options.prompt }],
     }),
   });
@@ -105,7 +102,6 @@ async function generateWithOpenAiCompatible(options: GenerateTextOptions) {
   const response = await client.chat.completions.create({
     model: options.model,
     messages: [{ role: "user", content: options.prompt }],
-    temperature: options.temperature,
     response_format: options.json ? { type: "json_object" } : undefined,
     max_tokens: options.maxTokens,
   });
@@ -139,7 +135,6 @@ export async function testAiConnection(options: Omit<GenerateTextOptions, "promp
   await generateText({
     ...options,
     prompt: "Reply with ok.",
-    temperature: 0,
     maxTokens: 8,
   });
 }

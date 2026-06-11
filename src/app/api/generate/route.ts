@@ -179,7 +179,6 @@ export async function POST(request: Request) {
     provider,
     baseUrl,
     prompt: promptText,
-    temperature: 0.4,
     maxTokens: 12000,
   });
   const validation = validateLatexOutput(latex);
