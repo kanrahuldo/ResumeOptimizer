@@ -83,18 +83,57 @@ export function verifyOverleafSnippetToken(token: string | null, runId: number) 
   );
 }
 
-export function buildSignedOverleafSnippetUrl(request: Request, runId: number) {
-  const requestOrigin = getRequestOrigin(request);
-  const snippetOrigin = getSnippetOrigin(request);
-  const url = new URL(`/api/overleaf/snippet/${runId}/resume.tex`, snippetOrigin);
-  url.searchParams.set("token", createOverleafSnippetToken(runId));
-
+function appendVercelBypass(url: URL) {
   const vercelBypass =
     process.env.OVERLEAF_VERCEL_BYPASS_SECRET ||
     process.env.VERCEL_AUTOMATION_BYPASS_SECRET;
-  if (vercelBypass && snippetOrigin === requestOrigin) {
+  if (vercelBypass) {
     url.searchParams.set("x-vercel-protection-bypass", vercelBypass);
   }
+}
 
+export function buildSignedOverleafSnippetUrl(request: Request, runId: number) {
+  const snippetOrigin = getSnippetOrigin(request);
+  const url = new URL(`/api/overleaf/snippet/${runId}/resume.tex`, snippetOrigin);
+  url.searchParams.set("token", createOverleafSnippetToken(runId));
+  appendVercelBypass(url);
   return url.toString();
+}
+
+export function buildSignedOverleafOpenUrl(request: Request, runId: number) {
+  const snippetOrigin = getSnippetOrigin(request);
+  const url = new URL(`/api/overleaf/open/${runId}`, snippetOrigin);
+  url.searchParams.set("token", createOverleafSnippetToken(runId));
+  appendVercelBypass(url);
+  return url.toString();
+}
+
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;");
+}
+
+export function buildOverleafPostHtml(latex: string) {
+  const encoded = encodeURIComponent(latex);
+  const safeValue = escapeHtml(encoded);
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Opening in Overleaf…</title>
+</head>
+<body>
+  <p>Opening your resume in Overleaf…</p>
+  <form id="overleaf-form" action="https://www.overleaf.com/docs" method="post" target="_blank">
+    <input type="hidden" name="encoded_snip" value="${safeValue}" />
+  </form>
+  <noscript>
+    <p><button type="submit" form="overleaf-form">Continue to Overleaf</button></p>
+  </noscript>
+  <script>document.getElementById("overleaf-form").submit();</script>
+</body>
+</html>`;
 }

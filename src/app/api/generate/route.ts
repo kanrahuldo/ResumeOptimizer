@@ -7,8 +7,8 @@ import { generateText } from "@/lib/ai";
 import { getUserId } from "@/lib/auth";
 import { decryptSecret } from "@/lib/crypto";
 import { buildPrompt } from "@/lib/prompt";
-import { buildResumeFilename, uploadLatexToGitHub, buildOverleafUrl } from "@/lib/github";
-import { buildSignedOverleafSnippetUrl } from "@/lib/overleaf";
+import { buildResumeFilename, uploadLatexToGitHub } from "@/lib/github";
+import { buildSignedOverleafOpenUrl } from "@/lib/overleaf";
 import { validateLatexOutput } from "@/lib/validation";
 
 export const runtime = "nodejs";
@@ -234,9 +234,7 @@ export async function POST(request: Request) {
     throw new Error("Run record was not created.");
   }
 
-  const overleafUrl = buildOverleafUrl(
-    buildSignedOverleafSnippetUrl(request, run.id)
-  );
+  const overleafUrl = buildSignedOverleafOpenUrl(request, run.id);
   await db
     .update(runs)
     .set({ overleafUrl })

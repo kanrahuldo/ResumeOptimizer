@@ -1,4 +1,7 @@
-import { verifyOverleafSnippetToken } from "@/lib/overleaf";
+import {
+  buildOverleafPostHtml,
+  verifyOverleafSnippetToken,
+} from "@/lib/overleaf";
 import { getRunLatexForPreview } from "@/lib/run-latex";
 
 export async function GET(
@@ -19,13 +22,13 @@ export async function GET(
 
   const run = await getRunLatexForPreview({ runId });
   if (!run.found || !run.latex) {
-    return Response.json({ error: "Snippet not found." }, { status: 404 });
+    return Response.json({ error: "Resume not found." }, { status: 404 });
   }
 
-  return new Response(run.latex, {
+  return new Response(buildOverleafPostHtml(run.latex), {
     headers: {
       "Cache-Control": "no-store",
-      "Content-Type": "text/plain; charset=utf-8",
+      "Content-Type": "text/html; charset=utf-8",
     },
   });
 }
