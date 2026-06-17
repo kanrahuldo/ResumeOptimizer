@@ -71,7 +71,7 @@ export function verifyOverleafSnippetToken(token: string | null, runId: number) 
 
 export function buildSignedOverleafSnippetUrl(request: Request, runId: number) {
   const url = new URL(
-    `/api/overleaf/snippet/${runId}`,
+    `/api/overleaf/snippet/${runId}/resume.tex`,
     getRequestOrigin(request)
   );
   url.searchParams.set("token", createOverleafSnippetToken(runId));
