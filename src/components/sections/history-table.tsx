@@ -59,16 +59,6 @@ export function HistoryTable({ rows }: HistoryTableProps) {
     }
   };
 
-  const toRawGithubUrl = (url: string) => {
-    if (url.includes("raw.githubusercontent.com")) return url;
-    if (url.includes("github.com/")) {
-      return url
-        .replace("https://github.com/", "https://raw.githubusercontent.com/")
-        .replace("/blob/", "/");
-    }
-    return url;
-  };
-
   const closePdfPreview = () => {
     if (pdfUrl && pdfUrl.startsWith("blob:")) {
       URL.revokeObjectURL(pdfUrl);
@@ -81,10 +71,6 @@ export function HistoryTable({ rows }: HistoryTableProps) {
   };
 
   const handlePdfPreview = async (row: HistoryRow) => {
-    if (!row.outputUrl) {
-      push({ title: "No GitHub file for this run.", variant: "error" });
-      return;
-    }
     setPdfError(null);
     const fileNameFromUrl = (() => {
       if (!row.outputUrl) return "resume";
@@ -105,17 +91,7 @@ export function HistoryTable({ rows }: HistoryTableProps) {
     setIsPdfPreviewing(true);
 
     try {
-      const rawUrl = toRawGithubUrl(row.outputUrl);
-      const texResponse = await fetch(rawUrl);
-      if (!texResponse.ok) {
-        throw new Error("Failed to fetch LaTeX source from GitHub.");
-      }
-      const texContent = await texResponse.text();
-      const previewResponse = await fetch("/api/latex/preview", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content: texContent, name: fileNameFromUrl }),
-      });
+      const previewResponse = await fetch(`/api/runs/${row.id}/preview`);
       if (!previewResponse.ok) {
         const payload = (await previewResponse.json().catch(() => null)) as
           | { error?: string }

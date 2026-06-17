@@ -412,16 +412,6 @@ export function AdminPanel() {
     }
   };
 
-  const toRawGithubUrl = (url: string) => {
-    if (url.includes("raw.githubusercontent.com")) return url;
-    if (url.includes("github.com/")) {
-      return url
-        .replace("https://github.com/", "https://raw.githubusercontent.com/")
-        .replace("/blob/", "/");
-    }
-    return url;
-  };
-
   const requestPreview = async (nextContent: string, nextName: string) => {
     const response = await fetch("/api/latex/preview", {
       method: "POST",
@@ -489,10 +479,6 @@ export function AdminPanel() {
   };
 
   const handleRunPreview = async (run: AdminRun) => {
-    if (!run.outputUrl) {
-      push({ title: "No GitHub file for this run.", variant: "error" });
-      return;
-    }
     setPdfError(null);
     const fileNameFromUrl = (() => {
       try {
@@ -512,17 +498,7 @@ export function AdminPanel() {
     setIsPdfPreviewing(true);
 
     try {
-      const rawUrl = toRawGithubUrl(run.outputUrl);
-      const texResponse = await fetch(rawUrl);
-      if (!texResponse.ok) {
-        throw new Error("Failed to fetch LaTeX source from GitHub.");
-      }
-      const texContent = await texResponse.text();
-      const previewResponse = await fetch("/api/latex/preview", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content: texContent, name: fileNameFromUrl }),
-      });
+      const previewResponse = await fetch(`/api/admin/runs/${run.id}/preview`);
       if (!previewResponse.ok) {
         const payload = (await previewResponse.json().catch(() => null)) as
           | { error?: string }
