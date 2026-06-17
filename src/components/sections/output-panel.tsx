@@ -74,7 +74,7 @@ export function OutputPanel({
         </div>
         <div className="rounded-2xl border border-dashed border-neutral-700 bg-neutral-950/60 p-4 text-xs text-neutral-400">
           {latexPreview
-            ? latexPreview.slice(0, 1200)
+            ? latexPreview
             : "LaTeX preview appears here after generation. Keep editing in Overleaf once the file is uploaded."}
         </div>
       </CardContent>

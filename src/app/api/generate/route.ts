@@ -232,7 +232,6 @@ export async function POST(request: Request) {
       runId: run.id,
       outputUrl: upload.downloadUrl,
       overleafUrl,
-      latex,
     },
   });
   } catch (error) {

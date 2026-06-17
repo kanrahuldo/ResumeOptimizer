@@ -10,7 +10,6 @@ type GenerateResponse = {
     runId?: number;
     outputUrl: string;
     overleafUrl: string;
-    latex: string;
   };
   error?: string;
   details?: string[];
@@ -65,7 +64,9 @@ export function HomeDashboard() {
       setStatusVariant("success");
       setOutputUrl(json.data.outputUrl);
       setOverleafUrl(json.data.overleafUrl);
-      setLatexPreview(json.data.latex);
+      setLatexPreview(
+        "Resume generated. Use the Overleaf link to review and edit the document."
+      );
     } catch (error) {
       setStatusLabel("Error");
       setStatusVariant("warning");

@@ -33,7 +33,6 @@ type GenerateResponse = {
     runId?: number;
     outputUrl: string;
     overleafUrl: string;
-    latex: string;
   };
   error?: string;
   details?: string[];
@@ -121,7 +120,7 @@ function isCustomProfileModel(config: OpenAiConfigRecord, modelId: string) {
   return !getProviderModels(config.provider).some((item) => item.id === modelId);
 }
 
-async function readGenerateResponse(response: Response) {
+async function readGenerateResponse(response: Response): Promise<GenerateResponse> {
   const contentType = response.headers.get("content-type") || "";
   if (contentType.includes("application/json")) {
     return (await response.json()) as GenerateResponse;
@@ -132,7 +131,6 @@ async function readGenerateResponse(response: Response) {
     data: {
       outputUrl: "",
       overleafUrl: "",
-      latex: "",
     },
     error: text || "Generation failed.",
   };
