@@ -45,6 +45,20 @@ function getRequestOrigin(request: Request) {
   return new URL(request.url).origin;
 }
 
+function normalizeOrigin(value?: string | null) {
+  const cleaned = String(value || "").trim().replace(/\/+$/, "");
+  if (!cleaned) return "";
+  return /^https?:\/\//i.test(cleaned) ? cleaned : `https://${cleaned}`;
+}
+
+function getSnippetOrigin(request: Request) {
+  return (
+    normalizeOrigin(process.env.OVERLEAF_SNIPPET_ORIGIN) ||
+    normalizeOrigin(process.env.VERCEL_PROJECT_PRODUCTION_URL) ||
+    getRequestOrigin(request)
+  );
+}
+
 export function createOverleafSnippetToken(runId: number) {
   const payload = String(runId);
   return `${payload}.${sign(payload)}`;
@@ -70,16 +84,15 @@ export function verifyOverleafSnippetToken(token: string | null, runId: number) 
 }
 
 export function buildSignedOverleafSnippetUrl(request: Request, runId: number) {
-  const url = new URL(
-    `/api/overleaf/snippet/${runId}/resume.tex`,
-    getRequestOrigin(request)
-  );
+  const requestOrigin = getRequestOrigin(request);
+  const snippetOrigin = getSnippetOrigin(request);
+  const url = new URL(`/api/overleaf/snippet/${runId}/resume.tex`, snippetOrigin);
   url.searchParams.set("token", createOverleafSnippetToken(runId));
 
   const vercelBypass =
     process.env.OVERLEAF_VERCEL_BYPASS_SECRET ||
     process.env.VERCEL_AUTOMATION_BYPASS_SECRET;
-  if (vercelBypass) {
+  if (vercelBypass && snippetOrigin === requestOrigin) {
     url.searchParams.set("x-vercel-protection-bypass", vercelBypass);
   }
 
