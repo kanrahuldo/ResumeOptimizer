@@ -8,6 +8,7 @@ import { getUserId } from "@/lib/auth";
 import { decryptSecret } from "@/lib/crypto";
 import { buildPrompt } from "@/lib/prompt";
 import { buildResumeFilename, uploadLatexToGitHub, buildOverleafUrl } from "@/lib/github";
+import { buildSignedOverleafSnippetUrl } from "@/lib/overleaf";
 import { validateLatexOutput } from "@/lib/validation";
 
 export const runtime = "nodejs";
@@ -201,8 +202,6 @@ export async function POST(request: Request) {
       id: jobId,
     }),
   });
-  const overleafUrl = buildOverleafUrl(upload.downloadUrl);
-
   const [run] = await db
     .insert(runs)
     .values({
@@ -211,14 +210,26 @@ export async function POST(request: Request) {
       templateId: templateRecord.id,
       promptId: promptRecord.id,
       outputUrl: upload.downloadUrl,
-      overleafUrl,
+      latex,
       status: "ready",
     })
     .returning();
 
+  if (!run) {
+    throw new Error("Run record was not created.");
+  }
+
+  const overleafUrl = buildOverleafUrl(
+    buildSignedOverleafSnippetUrl(request, run.id)
+  );
+  await db
+    .update(runs)
+    .set({ overleafUrl })
+    .where(eq(runs.id, run.id));
+
   return NextResponse.json({
     data: {
-      runId: run?.id,
+      runId: run.id,
       outputUrl: upload.downloadUrl,
       overleafUrl,
       latex,

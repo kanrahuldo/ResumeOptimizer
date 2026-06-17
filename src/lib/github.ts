@@ -90,8 +90,8 @@ export async function uploadLatexToGitHub(
   return { downloadUrl: data.content.download_url, path };
 }
 
-export function buildOverleafUrl(downloadUrl: string) {
+export function buildOverleafUrl(snippetUrl: string) {
   return `https://www.overleaf.com/docs?snip_uri=${encodeURIComponent(
-    downloadUrl
+    snippetUrl
   )}`;
 }

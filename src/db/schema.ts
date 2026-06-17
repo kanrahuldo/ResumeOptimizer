@@ -63,6 +63,7 @@ export const runs = pgTable("runs", {
   promptId: integer("prompt_id").references(() => prompts.id),
   outputUrl: text("output_url"),
   overleafUrl: text("overleaf_url"),
+  latex: text("latex"),
   status: text("status").notNull().default("queued"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
