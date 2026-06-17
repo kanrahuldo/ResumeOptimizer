@@ -71,6 +71,15 @@ export function HistoryTable({ rows }: HistoryTableProps) {
   };
 
   const handlePdfPreview = async (row: HistoryRow) => {
+    if (row.overleafUrl) {
+      window.open(row.overleafUrl, "_blank", "noopener,noreferrer");
+      push({
+        title: "Opening Overleaf preview...",
+        variant: "success",
+      });
+      return;
+    }
+
     setPdfError(null);
     const fileNameFromUrl = (() => {
       if (!row.outputUrl) return "resume";

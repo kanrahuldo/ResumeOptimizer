@@ -479,6 +479,15 @@ export function AdminPanel() {
   };
 
   const handleRunPreview = async (run: AdminRun) => {
+    if (run.overleafUrl) {
+      window.open(run.overleafUrl, "_blank", "noopener,noreferrer");
+      push({
+        title: "Opening Overleaf preview...",
+        variant: "success",
+      });
+      return;
+    }
+
     setPdfError(null);
     const fileNameFromUrl = (() => {
       try {
