@@ -138,13 +138,27 @@ export async function POST(request: Request) {
     }
   }
 
-  const [defaultOpenAi] = selectedAiConfig
+  let [defaultOpenAi] = selectedAiConfig
     ? [selectedAiConfig]
     : await db
         .select()
         .from(openaiConfigs)
         .where(and(eq(openaiConfigs.isDefault, true), eq(openaiConfigs.userId, userId)))
         .limit(1);
+
+  if (
+    requestedModel.toLowerCase().startsWith("gpt-") &&
+    defaultOpenAi?.provider !== "openai"
+  ) {
+    const [openAiProfile] = await db
+      .select()
+      .from(openaiConfigs)
+      .where(and(eq(openaiConfigs.provider, "openai"), eq(openaiConfigs.userId, userId)))
+      .limit(1);
+    if (openAiProfile) {
+      defaultOpenAi = openAiProfile;
+    }
+  }
 
   const promptText = buildPrompt({
     jobDescription,
@@ -163,7 +177,9 @@ export async function POST(request: Request) {
   }
 
   const model = requestedModel || defaultOpenAi?.model || process.env.AI_MODEL || process.env.OPENAI_MODEL || "gpt-4o-mini";
-  const provider = defaultOpenAi?.provider || process.env.AI_PROVIDER || "openai";
+  const provider = requestedModel.toLowerCase().startsWith("gpt-")
+    ? "openai"
+    : defaultOpenAi?.provider || process.env.AI_PROVIDER || "openai";
   const baseUrl = defaultOpenAi?.baseUrl || process.env.AI_BASE_URL;
 
   const [user] = await db
@@ -210,7 +226,6 @@ export async function POST(request: Request) {
       templateId: templateRecord.id,
       promptId: promptRecord.id,
       outputUrl: upload.downloadUrl,
-      latex,
       status: "ready",
     })
     .returning();

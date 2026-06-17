@@ -1,8 +1,5 @@
-import { eq } from "drizzle-orm";
-
-import { db } from "@/db";
-import { runs } from "@/db/schema";
 import { verifyOverleafSnippetToken } from "@/lib/overleaf";
+import { getRunLatexForPreview } from "@/lib/run-latex";
 
 export async function GET(
   request: Request,
@@ -20,13 +17,8 @@ export async function GET(
     return Response.json({ error: "Invalid link." }, { status: 403 });
   }
 
-  const [run] = await db
-    .select({ latex: runs.latex })
-    .from(runs)
-    .where(eq(runs.id, runId))
-    .limit(1);
-
-  if (!run?.latex) {
+  const run = await getRunLatexForPreview({ runId });
+  if (!run.found || !run.latex) {
     return Response.json({ error: "Snippet not found." }, { status: 404 });
   }
 

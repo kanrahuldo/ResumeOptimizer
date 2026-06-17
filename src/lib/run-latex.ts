@@ -74,7 +74,6 @@ export async function getRunLatexForPreview(params: {
     .select({
       id: runs.id,
       userId: runs.userId,
-      latex: runs.latex,
       outputUrl: runs.outputUrl,
     })
     .from(runs)
@@ -82,12 +81,10 @@ export async function getRunLatexForPreview(params: {
     .limit(1);
 
   if (!run) return { found: false as const };
-  if (run.latex) return { found: true as const, latex: run.latex, outputUrl: run.outputUrl };
   if (!run.outputUrl) return { found: true as const, latex: null, outputUrl: run.outputUrl };
 
   const latex = await fetchLatexFromGitHub(run.outputUrl, run.userId);
   if (!latex) return { found: true as const, latex: null, outputUrl: run.outputUrl };
 
-  await db.update(runs).set({ latex }).where(eq(runs.id, run.id));
   return { found: true as const, latex, outputUrl: run.outputUrl };
 }
