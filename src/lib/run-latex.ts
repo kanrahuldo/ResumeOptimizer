@@ -5,7 +5,12 @@ import { githubConfigs, runs } from "@/db/schema";
 import { decryptSecret } from "@/lib/crypto";
 
 function parseGitHubFileUrl(fileUrl: string) {
-  const url = new URL(fileUrl);
+  let url: URL;
+  try {
+    url = new URL(fileUrl);
+  } catch {
+    return null;
+  }
   const parts = url.pathname.split("/").filter(Boolean);
 
   if (url.hostname === "raw.githubusercontent.com" && parts.length >= 4) {
@@ -21,35 +26,72 @@ function parseGitHubFileUrl(fileUrl: string) {
   return null;
 }
 
-async function fetchLatexFromGitHub(outputUrl: string, userId: string) {
-  const parsed = parseGitHubFileUrl(outputUrl);
-  if (!parsed?.path) return null;
+function encodePathPart(part: string) {
+  return encodeURIComponent(decodeURIComponent(part));
+}
 
-  const [config] = await db
-    .select()
-    .from(githubConfigs)
-    .where(and(eq(githubConfigs.userId, userId), eq(githubConfigs.isDefault, true)))
-    .limit(1);
+function buildGitHubApiUrl(parsed: {
+  owner: string;
+  repo: string;
+  ref: string;
+  path: string;
+}) {
+  const path = parsed.path.split("/").map(encodePathPart).join("/");
+  return `https://api.github.com/repos/${parsed.owner}/${parsed.repo}/contents/${path}?ref=${encodeURIComponent(
+    parsed.ref
+  )}`;
+}
 
-  if (!config?.token) return null;
+function buildRawGitHubUrl(parsed: {
+  owner: string;
+  repo: string;
+  ref: string;
+  path: string;
+}) {
+  const path = parsed.path.split("/").map(encodePathPart).join("/");
+  return `https://raw.githubusercontent.com/${parsed.owner}/${parsed.repo}/${encodeURIComponent(
+    parsed.ref
+  )}/${path}`;
+}
 
-  const token = decryptSecret(config.token);
-  const path = parsed.path
-    .split("/")
-    .map((part) => encodeURIComponent(decodeURIComponent(part)))
-    .join("/");
-  const response = await fetch(
-    `https://api.github.com/repos/${parsed.owner}/${parsed.repo}/contents/${path}?ref=${encodeURIComponent(
-      parsed.ref
-    )}`,
-    {
+async function fetchPublicLatexFromGitHub(parsed: {
+  owner: string;
+  repo: string;
+  ref: string;
+  path: string;
+}) {
+  let response: Response;
+  try {
+    response = await fetch(buildRawGitHubUrl(parsed), { cache: "no-store" });
+  } catch {
+    return null;
+  }
+  if (!response.ok) return null;
+
+  return response.text();
+}
+
+async function fetchLatexFromGitHubApi(
+  parsed: {
+    owner: string;
+    repo: string;
+    ref: string;
+    path: string;
+  },
+  token: string
+) {
+  let response: Response;
+  try {
+    response = await fetch(buildGitHubApiUrl(parsed), {
       headers: {
         Authorization: `Bearer ${token}`,
         Accept: "application/vnd.github.v3+json",
       },
       cache: "no-store",
-    }
-  );
+    });
+  } catch {
+    return null;
+  }
 
   if (!response.ok) return null;
 
@@ -60,6 +102,41 @@ async function fetchLatexFromGitHub(outputUrl: string, userId: string) {
 
   if (data.encoding !== "base64" || !data.content) return null;
   return Buffer.from(data.content.replace(/\s/g, ""), "base64").toString("utf8");
+}
+
+async function fetchLatexFromGitHub(outputUrl: string, userId: string) {
+  const parsed = parseGitHubFileUrl(outputUrl);
+  if (!parsed?.path) return null;
+
+  const publicLatex = await fetchPublicLatexFromGitHub(parsed);
+  if (publicLatex) return publicLatex;
+
+  const tokens: string[] = [];
+  const [config] = await db
+    .select()
+    .from(githubConfigs)
+    .where(and(eq(githubConfigs.userId, userId), eq(githubConfigs.isDefault, true)))
+    .limit(1);
+
+  if (config?.token) {
+    try {
+      tokens.push(decryptSecret(config.token));
+    } catch {
+      // Continue with environment credentials if a saved profile is stale.
+    }
+  }
+
+  if (process.env.GITHUB_TOKEN) {
+    tokens.push(process.env.GITHUB_TOKEN);
+  }
+
+  const uniqueTokens = Array.from(new Set(tokens.filter(Boolean)));
+  for (const token of uniqueTokens) {
+    const latex = await fetchLatexFromGitHubApi(parsed, token);
+    if (latex) return latex;
+  }
+
+  return null;
 }
 
 export async function getRunLatexForPreview(params: {
