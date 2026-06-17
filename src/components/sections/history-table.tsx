@@ -105,6 +105,15 @@ export function HistoryTable({ rows }: HistoryTableProps) {
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Failed to render preview.";
+      if (row.overleafUrl) {
+        setPdfOpen(false);
+        window.open(row.overleafUrl, "_blank", "noopener,noreferrer");
+        push({
+          title: "Opening Overleaf preview instead.",
+          variant: "success",
+        });
+        return;
+      }
       setPdfError(message);
       push({ title: message, variant: "error" });
     } finally {

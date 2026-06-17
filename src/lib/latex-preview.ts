@@ -79,6 +79,10 @@ export async function renderLatexPreviewPdf(content: string) {
     );
   } catch (error) {
     const err = error as { message?: string; stdout?: string; stderr?: string };
+    if (/ENOENT/i.test(err.message || "")) {
+      throw new Error("PDF preview is unavailable in this deployment.");
+    }
+
     const detail = err.stderr || err.stdout || "";
     const trimmed = detail.length > 2000 ? detail.slice(-2000) : detail;
     const message = trimmed

@@ -512,6 +512,15 @@ export function AdminPanel() {
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Failed to render preview.";
+      if (run.overleafUrl) {
+        setPdfOpen(false);
+        window.open(run.overleafUrl, "_blank", "noopener,noreferrer");
+        push({
+          title: "Opening Overleaf preview instead.",
+          variant: "success",
+        });
+        return;
+      }
       setPdfError(message);
       push({ title: message, variant: "error" });
     } finally {
