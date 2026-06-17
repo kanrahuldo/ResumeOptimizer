@@ -6,15 +6,7 @@ import { HistoryTable } from "@/components/sections/history-table";
 import { db } from "@/db";
 import { runs } from "@/db/schema";
 import { authOptions } from "@/lib/auth";
-
-type RunRecord = {
-  id: number;
-  jobDescription: string;
-  status: string;
-  outputUrl?: string | null;
-  overleafUrl?: string | null;
-  createdAt: Date;
-};
+import { runResponseFields } from "@/lib/run-fields";
 
 export default async function HistoryPage() {
   const session = await getServerSession(authOptions);
@@ -23,7 +15,7 @@ export default async function HistoryPage() {
   }
 
   const data = await db
-    .select()
+    .select(runResponseFields)
     .from(runs)
     .where(eq(runs.userId, session.user.id))
     .orderBy(desc(runs.createdAt));

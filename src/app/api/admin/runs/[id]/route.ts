@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { runs } from "@/db/schema";
 import { requireAdmin } from "@/lib/admin";
+import { runResponseFields } from "@/lib/run-fields";
 
 type Params = {
   params: Promise<{ id: string }>;
@@ -26,7 +27,7 @@ export async function DELETE(_request: Request, { params }: Params) {
   const [deleted] = await db
     .delete(runs)
     .where(eq(runs.id, runId))
-    .returning();
+    .returning(runResponseFields);
 
   if (!deleted) {
     return NextResponse.json({ error: "Run not found." }, { status: 404 });

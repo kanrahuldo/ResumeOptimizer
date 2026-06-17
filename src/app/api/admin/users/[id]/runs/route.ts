@@ -4,6 +4,7 @@ import { desc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { runs } from "@/db/schema";
 import { requireAdmin } from "@/lib/admin";
+import { runResponseFields } from "@/lib/run-fields";
 
 type Params = {
   params: Promise<{ id: string }>;
@@ -21,7 +22,7 @@ export async function GET(_request: Request, { params }: Params) {
   const userId = String(id);
 
   const data = await db
-    .select()
+    .select(runResponseFields)
     .from(runs)
     .where(eq(runs.userId, userId))
     .orderBy(desc(runs.createdAt));

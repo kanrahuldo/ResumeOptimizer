@@ -4,6 +4,7 @@ import { desc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { runs } from "@/db/schema";
 import { getUserId } from "@/lib/auth";
+import { runResponseFields } from "@/lib/run-fields";
 
 export async function GET() {
   const userId = await getUserId();
@@ -12,7 +13,7 @@ export async function GET() {
   }
 
   const data = await db
-    .select()
+    .select(runResponseFields)
     .from(runs)
     .where(eq(runs.userId, userId))
     .orderBy(desc(runs.createdAt));
