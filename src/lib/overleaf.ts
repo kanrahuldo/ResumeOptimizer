@@ -75,5 +75,13 @@ export function buildSignedOverleafSnippetUrl(request: Request, runId: number) {
     getRequestOrigin(request)
   );
   url.searchParams.set("token", createOverleafSnippetToken(runId));
+
+  const vercelBypass =
+    process.env.OVERLEAF_VERCEL_BYPASS_SECRET ||
+    process.env.VERCEL_AUTOMATION_BYPASS_SECRET;
+  if (vercelBypass) {
+    url.searchParams.set("x-vercel-protection-bypass", vercelBypass);
+  }
+
   return url.toString();
 }
