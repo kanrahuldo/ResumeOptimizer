@@ -30,8 +30,6 @@ type ChatMessage = {
 
 type GenerateResponse = {
   data: {
-    runId?: number;
-    outputUrl: string;
     overleafUrl: string;
   };
   error?: string;
@@ -129,7 +127,6 @@ async function readGenerateResponse(response: Response): Promise<GenerateRespons
   const text = await response.text();
   return {
     data: {
-      outputUrl: "",
       overleafUrl: "",
     },
     error: text || "Generation failed.",

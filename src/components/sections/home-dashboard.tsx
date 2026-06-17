@@ -7,8 +7,6 @@ import { OutputPanel } from "@/components/sections/output-panel";
 
 type GenerateResponse = {
   data: {
-    runId?: number;
-    outputUrl: string;
     overleafUrl: string;
   };
   error?: string;
@@ -22,7 +20,6 @@ export function HomeDashboard() {
     "default" | "success" | "warning"
   >("warning");
   const [isBusy, setIsBusy] = useState(false);
-  const [outputUrl, setOutputUrl] = useState<string | undefined>(undefined);
   const [overleafUrl, setOverleafUrl] = useState<string | undefined>(undefined);
   const [latexPreview, setLatexPreview] = useState<string | undefined>(
     undefined
@@ -36,7 +33,6 @@ export function HomeDashboard() {
     setIsBusy(true);
     setStatusLabel("Generating");
     setStatusVariant("warning");
-    setOutputUrl(undefined);
     setOverleafUrl(undefined);
     setLatexPreview(undefined);
 
@@ -62,7 +58,6 @@ export function HomeDashboard() {
 
       setStatusLabel("Ready");
       setStatusVariant("success");
-      setOutputUrl(json.data.outputUrl);
       setOverleafUrl(json.data.overleafUrl);
       setLatexPreview(
         "Resume generated. Use the Overleaf link to review and edit the document."
@@ -89,7 +84,6 @@ export function HomeDashboard() {
       <OutputPanel
         statusLabel={statusLabel}
         statusVariant={statusVariant}
-        outputUrl={outputUrl}
         overleafUrl={overleafUrl}
         latexPreview={latexPreview}
       />

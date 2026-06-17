@@ -21,7 +21,6 @@ const steps = [
 type OutputPanelProps = {
   statusLabel: string;
   statusVariant: "default" | "success" | "warning";
-  outputUrl?: string;
   overleafUrl?: string;
   latexPreview?: string;
 };
@@ -29,7 +28,6 @@ type OutputPanelProps = {
 export function OutputPanel({
   statusLabel,
   statusVariant,
-  outputUrl,
   overleafUrl,
   latexPreview,
 }: OutputPanelProps) {
@@ -56,15 +54,9 @@ export function OutputPanel({
             </div>
           ))}
         </div>
-        <div className="grid gap-3 md:grid-cols-2">
+        <div>
           <Button
-            variant="secondary"
-            disabled={!outputUrl}
-            onClick={() => outputUrl && window.open(outputUrl, "_blank")}
-          >
-            View on GitHub
-          </Button>
-          <Button
+            className="w-full"
             variant="secondary"
             disabled={!overleafUrl}
             onClick={() => overleafUrl && window.open(overleafUrl, "_blank")}
@@ -75,7 +67,7 @@ export function OutputPanel({
         <div className="rounded-2xl border border-dashed border-neutral-700 bg-neutral-950/60 p-4 text-xs text-neutral-400">
           {latexPreview
             ? latexPreview
-            : "LaTeX preview appears here after generation. Keep editing in Overleaf once the file is uploaded."}
+            : "The Overleaf link appears after generation."}
         </div>
       </CardContent>
     </Card>

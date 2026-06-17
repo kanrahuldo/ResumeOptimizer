@@ -229,8 +229,6 @@ export async function POST(request: Request) {
 
   return NextResponse.json({
     data: {
-      runId: run.id,
-      outputUrl: upload.downloadUrl,
       overleafUrl,
     },
   });
