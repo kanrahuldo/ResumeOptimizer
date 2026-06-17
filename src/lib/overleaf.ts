@@ -127,7 +127,7 @@ export function buildOverleafPostHtml(latex: string) {
 </head>
 <body>
   <p>Opening your resume in Overleaf…</p>
-  <form id="overleaf-form" action="https://www.overleaf.com/docs" method="post" target="_blank">
+  <form id="overleaf-form" action="https://www.overleaf.com/docs" method="post">
     <input type="hidden" name="encoded_snip" value="${safeValue}" />
   </form>
   <noscript>
