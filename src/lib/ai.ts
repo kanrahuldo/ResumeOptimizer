@@ -8,6 +8,21 @@ import {
 
 const DEFAULT_TIMEOUT_MS = 295_000;
 
+export function isAnthropicPromptCacheEnabled() {
+  const value = String(process.env.AI_PROMPT_CACHE || "")
+    .trim()
+    .toLowerCase();
+  return value === "true" || value === "1" || value === "yes";
+}
+
+function getAnthropicCacheControl() {
+  const ttl = String(process.env.AI_PROMPT_CACHE_TTL || "").trim();
+  if (ttl === "1h") {
+    return { type: "ephemeral", ttl: "1h" };
+  }
+  return { type: "ephemeral" };
+}
+
 function getTimeoutMs() {
   const parsed = Number(process.env.AI_REQUEST_TIMEOUT_MS);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_TIMEOUT_MS;
@@ -29,12 +44,18 @@ export function createAiClient(options: {
   });
 }
 
+type PromptParts = {
+  cachedPrefix: string;
+  dynamicSuffix: string;
+};
+
 type GenerateTextOptions = {
   apiKey: string;
   model: string;
   provider?: string | null;
   baseUrl?: string | null;
   prompt: string;
+  promptParts?: PromptParts;
   maxTokens?: number;
   json?: boolean;
 };
@@ -75,6 +96,7 @@ async function generateWithGemini(options: GenerateTextOptions) {
 }
 
 async function generateWithAnthropic(options: GenerateTextOptions) {
+  const usePromptCaching = Boolean(options.promptParts);
   const response = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
@@ -83,11 +105,34 @@ async function generateWithAnthropic(options: GenerateTextOptions) {
       "anthropic-version": "2023-06-01",
     },
     signal: timeoutSignal(),
-    body: JSON.stringify({
-      model: options.model,
-      max_tokens: options.maxTokens || 8192,
-      messages: [{ role: "user", content: options.prompt }],
-    }),
+    body: JSON.stringify(
+      usePromptCaching
+        ? {
+            model: options.model,
+            max_tokens: options.maxTokens || 8192,
+            messages: [
+              {
+                role: "user",
+                content: [
+                  {
+                    type: "text",
+                    text: options.promptParts!.cachedPrefix,
+                    cache_control: getAnthropicCacheControl(),
+                  },
+                  {
+                    type: "text",
+                    text: options.promptParts!.dynamicSuffix,
+                  },
+                ],
+              },
+            ],
+          }
+        : {
+            model: options.model,
+            max_tokens: options.maxTokens || 8192,
+            messages: [{ role: "user", content: options.prompt }],
+          }
+    ),
   });
 
   if (!response.ok) {

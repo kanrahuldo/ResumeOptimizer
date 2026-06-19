@@ -3,10 +3,10 @@ import { and, eq } from "drizzle-orm";
 
 import { db } from "@/db";
 import { githubConfigs, openaiConfigs, prompts, runs, templates, users } from "@/db/schema";
-import { generateText } from "@/lib/ai";
+import { generateText, isAnthropicPromptCacheEnabled } from "@/lib/ai";
 import { getUserId } from "@/lib/auth";
 import { decryptSecret } from "@/lib/crypto";
-import { buildPrompt } from "@/lib/prompt";
+import { buildPrompt, buildPromptParts } from "@/lib/prompt";
 import { buildResumeFilename, uploadLatexToGitHub } from "@/lib/github";
 import { buildSignedOverleafOpenUrl } from "@/lib/overleaf";
 import { validateLatexOutput } from "@/lib/validation";
@@ -160,11 +160,15 @@ export async function POST(request: Request) {
     }
   }
 
-  const promptText = buildPrompt({
+  const promptInput = {
     jobDescription,
     template: templateRecord.content,
     promptProfile: promptRecord.content,
-  });
+  };
+  const promptText = buildPrompt(promptInput);
+  const promptParts = isAnthropicPromptCacheEnabled()
+    ? buildPromptParts(promptInput) ?? undefined
+    : undefined;
 
   const apiKey = defaultOpenAi?.apiKey
     ? decryptSecret(defaultOpenAi.apiKey)
@@ -196,6 +200,7 @@ export async function POST(request: Request) {
     provider,
     baseUrl,
     prompt: promptText,
+    promptParts,
     maxTokens: 12000,
   });
   const validation = validateLatexOutput(latex);

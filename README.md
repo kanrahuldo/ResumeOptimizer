@@ -54,6 +54,8 @@ Set these env vars:
 - `AI_PROVIDER` (optional, defaults to `openai`)
 - `AI_BASE_URL` (optional, for OpenAI-compatible providers)
 - `AI_REQUEST_TIMEOUT_MS` (optional, defaults to 295000; keep at or below your host function limit)
+- `AI_PROMPT_CACHE` (optional, defaults to off; set to `true` for Anthropic prompt caching when batching multiple resumes with the same template/prompt within a few minutes)
+- `AI_PROMPT_CACHE_TTL` (optional; set to `1h` for a longer cache window when `AI_PROMPT_CACHE=true`. Default is Anthropic's 5-minute TTL)
 
 ## Local Setup (Brief)
 
