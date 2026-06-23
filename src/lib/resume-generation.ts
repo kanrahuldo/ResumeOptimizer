@@ -159,7 +159,6 @@ export async function generateResumeRun(
       jobDescription: input.jobDescription,
       templateId: templateRecord.id,
       promptId: promptRecord.id,
-      latex,
       outputUrl: upload.downloadUrl,
       status: "ready",
     })
