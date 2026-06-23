@@ -96,6 +96,8 @@ npm run dev
 - GitHub/AI provider profiles are per-user and encrypted at rest.
 - Built-in provider choices include OpenAI, OpenRouter, Groq, Together AI,
   DeepSeek, xAI, Gemini, Claude, and custom OpenAI-compatible APIs.
+- For subscription-based tailoring (Claude Code or Codex) without API costs, see
+  [`local-workflow/README.md`](local-workflow/README.md).
 
 ---
 

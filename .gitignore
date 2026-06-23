@@ -39,3 +39,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local resume workflow outputs
+/local-workflow/output/*.tex
+!/local-workflow/output/.gitkeep
