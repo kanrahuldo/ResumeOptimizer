@@ -150,3 +150,14 @@ export function getProviderLabel(provider?: string | null) {
 export function isOpenAiCompatibleProvider(provider?: string | null) {
   return !["anthropic", "gemini"].includes(normalizeAiProvider(provider));
 }
+
+export function getModelId(model: string) {
+  const trimmed = String(model || "").trim().toLowerCase();
+  const parts = trimmed.split("/");
+  return parts[parts.length - 1] || trimmed;
+}
+
+export function usesMaxCompletionTokens(model: string) {
+  const id = getModelId(model);
+  return /^(gpt-5|o[134])([-.]|$)/.test(id);
+}
